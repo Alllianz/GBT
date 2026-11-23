@@ -1,0 +1,273 @@
+use crate::features::{FeatureMatrix, PurgedKFold, TripleBarrierLabeler};
+use crate::types::Kline;
+use super::oof_prediction_result::OofPredictionResult;
+use super::purged_cv_config::PurgedCvConfig;
+use super::trainable_model::TrainableModel;
+
+/// Orquestador de Validación Cruzada con Purga y Embargo (Purged Cross-Validation Runner)
+///
+/// Implementa la metodología institucional de Marcos López de Prado (2018):
+/// - Divide la serie temporal In-Sample en $K$ particiones temporales contiguas.
+/// - Purga causal previa al fold de validación para eliminar etiquetas cuyo retorno horizonte
+///   solape temporalmente con el inicio del fold ($t + H \ge test\_start$).
+/// - Embargo posterior al fold de validación para eliminar contaminación por memoria
+///   autorregresiva en los indicadores técnicos ($t \in [test\_end, test\_end + embargo)$).
+/// - Pre-calcula la matriz de características causales y etiquetas sobre la serie cronológica contigua,
+///   eliminando la discontinuidad temporal producida por concatenar bloques no contiguos de velas.
+/// - Preserva el período de warmup natural de cada fold al predecir a partir de la matriz de
+///   características real en sus índices temporales verdaderos ($t \le T$).
+pub struct PurgedCvRunner {
+    pub config: PurgedCvConfig,
+}
+
+impl PurgedCvRunner {
+    pub fn new(config: PurgedCvConfig) -> Self {
+        Self { config }
+    }
+
+    /// Ejecuta la validación cruzada purgada sobre el dataset in-sample `klines`
+    /// instanciando un modelo fresco en cada fold mediante `model_factory`.
+    ///
+    /// Retorna un `OofPredictionResult` con el vector de predicciones $V_{oof} \in \mathbb{R}^N$.
+    pub fn run_cv<M, F>(
+        &self,
+        klines: &[Kline],
+        model_factory: F,
+    ) -> Result<OofPredictionResult, String>
+    where
+        M: TrainableModel,
+        F: Fn() -> M,
+    {
+        let total_samples = klines.len();
+        if total_samples < 50 {
+            return Err(format!(
+                "Muestras insuficientes ({}) para ejecutar Purged CV (mínimo 50)",
+                total_samples
+            ));
+        }
+
+        // 1. Pre-cálculo causal de matriz de variables y etiquetas sobre la serie contigua intacta
+        let (matrix_flat, total_rows) = FeatureMatrix::build(klines);
+        let f_dim = FeatureMatrix::num_features();
+
+        if total_rows != total_samples || matrix_flat.is_empty() {
+            return Err(format!(
+                "Error extrayendo matriz de características causales: esperadas {} filas, obtenidas {}",
+                total_samples, total_rows
+            ));
+        }
+
+        // 2. Generar etiquetas causales con comisión estándar de backtest (0.05% por lado = 0.0005)
+        let y_all = TripleBarrierLabeler::label_regression(
+            klines,
+            self.config.horizon,
+            self.config.commission_rate,
+        );
+
+        let kf = PurgedKFold::new(
+            self.config.n_splits,
+            self.config.horizon,
+            self.config.embargo_bars,
+        );
+        let folds = kf.split(total_samples)?;
+
+        let mut oof_predictions = vec![0.0; total_samples];
+        let mut predicted_mask = vec![false; total_samples];
+
+        let warmup_bars = 35;
+        let max_labelable_idx = total_samples.saturating_sub(self.config.horizon);
+
+        for fold in &folds {
+            // 3. Filtrar índices de entrenamiento que cuenten con warmup completo y etiqueta completa
+            let valid_train_indices: Vec<usize> = fold
+                .train_indices
+                .iter()
+                .copied()
+                .filter(|&idx| idx >= warmup_bars && idx < max_labelable_idx)
+                .collect();
+
+            if valid_train_indices.len() < 15 {
+                return Err(format!(
+                    "Fold {} quedó con muestras de entrenamiento insuficientes ({}) tras purga y embargo",
+                    fold.fold_index,
+                    valid_train_indices.len()
+                ));
+            }
+
+            // 4. Construir x_train e y_train directamente a partir de las posiciones indexadas
+            // (Cero concatenación de Klines discontinuas, cero salto en indicadores técnicos)
+            let num_train = valid_train_indices.len();
+            let mut x_train = Vec::with_capacity(num_train * f_dim);
+            let mut y_train = Vec::with_capacity(num_train);
+
+            for &idx in &valid_train_indices {
+                let row_slice = &matrix_flat[(idx * f_dim)..((idx + 1) * f_dim)];
+                x_train.extend_from_slice(row_slice);
+                y_train.push(y_all[idx]);
+            }
+
+            // 5. Instanciar y entrenar el modelo del fold de manera estrictamente causal
+            let mut fold_model = model_factory();
+            fold_model.train_from_matrix(&x_train, &y_train, f_dim)?;
+
+            let valid_test_indices: Vec<usize> = fold
+                .test_indices
+                .iter()
+                .copied()
+                .filter(|&idx| idx >= warmup_bars)
+                .collect();
+
+            if valid_test_indices.is_empty() {
+                continue;
+            }
+
+            let num_test = valid_test_indices.len();
+            let mut x_test = Vec::with_capacity(num_test * f_dim);
+
+            for &idx in &valid_test_indices {
+                let row_slice = &matrix_flat[(idx * f_dim)..((idx + 1) * f_dim)];
+                x_test.extend_from_slice(row_slice);
+            }
+
+            let test_preds = fold_model.predict_from_matrix(&x_test, f_dim)?;
+            if test_preds.len() != num_test {
+                return Err(format!(
+                    "Fold {}: el modelo devolvió {} predicciones pero se esperaban {}",
+                    fold.fold_index,
+                    test_preds.len(),
+                    num_test
+                ));
+            }
+
+            for (i, &idx) in valid_test_indices.iter().enumerate() {
+                oof_predictions[idx] = test_preds[i];
+                predicted_mask[idx] = true;
+            }
+        }
+
+        let valid_predictions_count = predicted_mask.iter().filter(|&&p| p).count();
+
+        Ok(OofPredictionResult {
+            predictions: oof_predictions,
+            total_samples,
+            num_folds: folds.len(),
+            valid_predictions_count,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct MockModel {
+        trained: bool,
+    }
+
+    impl TrainableModel for MockModel {
+        fn train(&mut self, train_klines: &[Kline]) -> Result<(), String> {
+            if train_klines.is_empty() {
+                return Err("Train set vacío".to_string());
+            }
+            self.trained = true;
+            Ok(())
+        }
+
+        fn predict_batch(&self, klines: &[Kline]) -> Result<Vec<f64>, String> {
+            if !self.trained {
+                return Err("MockModel no entrenado".to_string());
+            }
+            Ok(klines.iter().map(|k| k.timestamp as f64 * 0.001).collect())
+        }
+
+        fn set_thresholds(&mut self, _long_th: f64, _short_th: f64) {}
+
+        fn train_from_matrix(&mut self, x: &[f64], y: &[f64], _num_features: usize) -> Result<(), String> {
+            if x.is_empty() || y.is_empty() {
+                return Err("Entrenamiento con matriz vacía".to_string());
+            }
+            self.trained = true;
+            Ok(())
+        }
+
+        fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
+            if !self.trained {
+                return Err("MockModel no entrenado".to_string());
+            }
+            let rows = x.len() / num_features;
+            // Devolver una predicción derivada deterministamente del primer feature de la fila
+            let preds: Vec<f64> = (0..rows)
+                .map(|r| {
+                    let f0 = x[r * num_features];
+                    f0 * 1.5 + 0.0001
+                })
+                .collect();
+            Ok(preds)
+        }
+    }
+
+    #[test]
+    fn test_purged_cv_runner_completes_all_folds_and_covers_dataset() {
+        let n = 200;
+        let klines: Vec<Kline> = (0..n)
+            .map(|i| Kline {
+                timestamp: (i as i64 + 1) * 3600,
+                open: 100.0 + (i as f64) * 0.1,
+                high: 105.0 + (i as f64) * 0.1,
+                low: 95.0 + (i as f64) * 0.1,
+                close: 102.0 + (i as f64) * 0.1,
+                volume: 500.0,
+            })
+            .collect();
+
+        let config = PurgedCvConfig::new(4, 5, 10);
+        let runner = PurgedCvRunner::new(config);
+
+        let result = runner
+            .run_cv(&klines, || MockModel { trained: false })
+            .expect("Purged CV debe ejecutarse exitosamente");
+
+        assert_eq!(result.total_samples, n);
+        assert_eq!(result.num_folds, 4);
+        assert_eq!(result.valid_predictions_count, n - 35);
+        assert_eq!(result.predictions.len(), n);
+        assert!(result.predictions[..35].iter().all(|&p| p == 0.0));
+    }
+
+    #[test]
+    fn test_purged_cv_preserves_temporal_warmup_and_zero_loss_of_bars() {
+        let n = 240;
+        let klines: Vec<Kline> = (0..n)
+            .map(|i| {
+                let p = 100.0 + (i as f64 * 0.05).sin() * 10.0;
+                Kline {
+                    timestamp: (i as i64 + 1) * 3600,
+                    open: p,
+                    high: p + 1.0,
+                    low: p - 1.0,
+                    close: p + 0.2,
+                    volume: 1000.0 + (i as f64) * 2.0,
+                }
+            })
+            .collect();
+
+        let config = PurgedCvConfig::new(4, 5, 10);
+        let runner = PurgedCvRunner::new(config);
+
+        let result = runner
+            .run_cv(&klines, || MockModel { trained: false })
+            .expect("Purged CV debe ejecutarse exitosamente");
+
+        assert_eq!(result.valid_predictions_count, n - 35);
+
+        // Validar que en folds intermedios (ej. fold 2: índices 60..120), las primeras barras
+        // NO están en 0.0, demostrando que no se pierde el warmup al predecir sobre la matriz causal
+        let mid_fold_predictions = &result.predictions[60..120];
+        let non_zero_count = mid_fold_predictions.iter().filter(|&&p| p.abs() > 1e-6).count();
+        assert_eq!(
+            non_zero_count,
+            mid_fold_predictions.len(),
+            "Todas las barras del fold intermedio deben tener predicciones activas (sin pérdida por falso warmup)"
+        );
+    }
+}

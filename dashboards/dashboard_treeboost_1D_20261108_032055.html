@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GBT Dashboard - TreeBoost [1D]</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #151922;
+            --border-color: #232936;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-blue: #2f81f7;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-purple: #bc8cff;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .badge {
+            background: #1f2937;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .kpi-card .label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px; }
+        .kpi-card .value { font-size: 20px; font-weight: bold; }
+        .kpi-card .sub { font-size: 12px; margin-top: 4px; color: var(--text-secondary); }
+        .green { color: var(--accent-green); }
+        .red { color: var(--accent-red); }
+        .blue { color: var(--accent-blue); }
+        .purple { color: var(--accent-purple); }
+
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            height: 380px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th { background: #1a202c; color: var(--text-secondary); font-weight: 600; }
+        tr:hover { background: #1c222e; }
+        .badge.long { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); padding: 3px 8px; border-radius: 4px; }
+        .badge.short { background: rgba(248, 81, 73, 0.2); color: var(--accent-red); padding: 3px 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🚀 GBT Dashboard Institucional: TreeBoost</h1>
+            <div style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Timeframe: 1D | Cero Look-Ahead Bias (t &le; T)</div>
+        </div>
+        <div class="badge">Generado: 2026-11-08 03:20:55 UTC</div>
+    </div>
+
+    <!-- KPIs Principales -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="label">Retorno In-Sample (IS)</div>
+            <div class="value green">+81959.69%</div>
+            <div class="sub">Sharpe: 3.08 | R²: 0.830</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Retorno Out-of-Sample (OOS)</div>
+            <div class="value red">-17.36%</div>
+            <div class="sub">Sharpe: -0.23 | R²: 0.000</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Profit Factor (OOS)</div>
+            <div class="value blue">0.88</div>
+            <div class="sub">Win Rate: 44.2% (50/113)</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Max Drawdown (OOS)</div>
+            <div class="value red">34.90%</div>
+            <div class="sub">Nominal: $4007.04</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Robustez (OOS / IS)</div>
+            <div class="value purple">-0.00x</div>
+            <div class="sub">Consistencia sin Overfitting</div>
+        </div>
+    </div>
+
+    <!-- Gráficos de Equity Curves -->
+    <div class="chart-container">
+        <canvas id="equityChart"></canvas>
+    </div>
+
+    <!-- Tabla de Trades OOS -->
+    <div class="section-title">Registro Detallado de Operaciones Out-of-Sample (OOS)</div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Lado</th>
+                <th>Fecha Entrada</th>
+                <th>Precio Entrada</th>
+                <th>Fecha Salida</th>
+                <th>Precio Salida</th>
+                <th>PnL Neto</th>
+                <th>Comisión</th>
+                <th>MAE %</th>
+                <th>Duración</th>
+                <th>Motivo Cierre</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                    <td>#1</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-03-15 00:00</td>
+                    <td>71403.22</td>
+                    <td>2024-04-04 00:00</td>
+                    <td>65950.08</td>
+                    <td class='red'>$-384.16 (-7.68%)</td>
+                    <td>$2.31</td>
+                    <td>14.88%</td>
+                    <td>20 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#2</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-04-05 00:00</td>
+                    <td>68501.50</td>
+                    <td>2024-04-10 00:00</td>
+                    <td>69132.17</td>
+                    <td class='green'>$41.83 (+0.87%)</td>
+                    <td>$2.43</td>
+                    <td>3.72%</td>
+                    <td>5 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#3</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-04-11 00:00</td>
+                    <td>70645.21</td>
+                    <td>2024-04-14 00:00</td>
+                    <td>63911.74</td>
+                    <td class='red'>$-462.20 (-9.58%)</td>
+                    <td>$2.18</td>
+                    <td>14.13%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#4</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-04-18 00:00</td>
+                    <td>61289.64</td>
+                    <td>2024-04-19 00:00</td>
+                    <td>63457.40</td>
+                    <td class='green'>$160.11 (+3.49%)</td>
+                    <td>$2.38</td>
+                    <td>0.79%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#5</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-04-21 00:00</td>
+                    <td>64953.57</td>
+                    <td>2024-04-22 00:00</td>
+                    <td>64928.16</td>
+                    <td class='red'>$-4.16 (-0.09%)</td>
+                    <td>$2.34</td>
+                    <td>1.10%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#6</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-04-23 00:00</td>
+                    <td>66805.96</td>
+                    <td>2024-05-02 00:00</td>
+                    <td>58376.64</td>
+                    <td class='green'>$587.17 (+12.57%)</td>
+                    <td>$2.04</td>
+                    <td>0.56%</td>
+                    <td>9 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#7</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-05-05 00:00</td>
+                    <td>63879.25</td>
+                    <td>2024-05-16 00:00</td>
+                    <td>66219.75</td>
+                    <td class='red'>$-184.38 (-3.72%)</td>
+                    <td>$2.57</td>
+                    <td>4.02%</td>
+                    <td>11 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#8</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-05-17 00:00</td>
+                    <td>65222.16</td>
+                    <td>2024-05-18 00:00</td>
+                    <td>67037.40</td>
+                    <td class='red'>$-138.01 (-2.83%)</td>
+                    <td>$2.50</td>
+                    <td>3.42%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#9</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-05-18 00:00</td>
+                    <td>67037.40</td>
+                    <td>2024-05-19 00:00</td>
+                    <td>66901.82</td>
+                    <td class='red'>$-12.10 (-0.25%)</td>
+                    <td>$2.39</td>
+                    <td>0.65%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#10</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-05-21 00:00</td>
+                    <td>71460.91</td>
+                    <td>2024-05-24 00:00</td>
+                    <td>67956.07</td>
+                    <td class='red'>$-237.27 (-4.95%)</td>
+                    <td>$2.28</td>
+                    <td>7.20%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#11</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-05-25 00:00</td>
+                    <td>68563.70</td>
+                    <td>2024-05-30 00:00</td>
+                    <td>67638.88</td>
+                    <td class='red'>$-65.31 (-1.40%)</td>
+                    <td>$2.30</td>
+                    <td>2.10%</td>
+                    <td>5 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#12</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-05-31 00:00</td>
+                    <td>68365.84</td>
+                    <td>2024-06-13 00:00</td>
+                    <td>68250.33</td>
+                    <td class='red'>$-10.15 (-0.22%)</td>
+                    <td>$2.31</td>
+                    <td>3.39%</td>
+                    <td>13 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#13</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-06-14 00:00</td>
+                    <td>66786.36</td>
+                    <td>2024-06-27 00:00</td>
+                    <td>60852.81</td>
+                    <td class='red'>$-413.58 (-8.93%)</td>
+                    <td>$2.11</td>
+                    <td>12.55%</td>
+                    <td>13 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#14</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-06-28 00:00</td>
+                    <td>61718.80</td>
+                    <td>2024-06-29 00:00</td>
+                    <td>60415.75</td>
+                    <td class='red'>$-95.55 (-2.16%)</td>
+                    <td>$2.17</td>
+                    <td>2.68%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#15</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-06-30 00:00</td>
+                    <td>60998.88</td>
+                    <td>2024-07-07 00:00</td>
+                    <td>58218.48</td>
+                    <td class='red'>$-201.48 (-4.61%)</td>
+                    <td>$2.09</td>
+                    <td>12.32%</td>
+                    <td>7 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#16</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-07-07 00:00</td>
+                    <td>58218.48</td>
+                    <td>2024-07-08 00:00</td>
+                    <td>55868.98</td>
+                    <td class='green'>$170.38 (+3.99%)</td>
+                    <td>$2.05</td>
+                    <td>0.40%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#17</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-07-08 00:00</td>
+                    <td>55868.98</td>
+                    <td>2024-07-09 00:00</td>
+                    <td>56703.27</td>
+                    <td class='green'>$62.85 (+1.44%)</td>
+                    <td>$2.21</td>
+                    <td>2.88%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#18</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-07-10 00:00</td>
+                    <td>58038.39</td>
+                    <td>2024-07-16 00:00</td>
+                    <td>64737.00</td>
+                    <td class='red'>$-508.80 (-11.60%)</td>
+                    <td>$2.45</td>
+                    <td>11.82%</td>
+                    <td>6 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#19</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-07-16 00:00</td>
+                    <td>64737.00</td>
+                    <td>2024-07-18 00:00</td>
+                    <td>64075.17</td>
+                    <td class='red'>$-44.28 (-1.07%)</td>
+                    <td>$2.04</td>
+                    <td>3.65%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#20</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-07-18 00:00</td>
+                    <td>64075.17</td>
+                    <td>2024-07-20 00:00</td>
+                    <td>66673.34</td>
+                    <td class='red'>$-168.73 (-4.11%)</td>
+                    <td>$2.14</td>
+                    <td>5.17%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#21</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-07-20 00:00</td>
+                    <td>66673.34</td>
+                    <td>2024-07-30 00:00</td>
+                    <td>66771.32</td>
+                    <td class='green'>$3.90 (+0.10%)</td>
+                    <td>$2.01</td>
+                    <td>4.82%</td>
+                    <td>10 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#22</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-08-01 00:00</td>
+                    <td>64640.94</td>
+                    <td>2024-08-02 00:00</td>
+                    <td>65340.95</td>
+                    <td class='green'>$41.54 (+1.03%)</td>
+                    <td>$2.03</td>
+                    <td>3.62%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#23</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-08-03 00:00</td>
+                    <td>61486.04</td>
+                    <td>2024-08-07 00:00</td>
+                    <td>56033.20</td>
+                    <td class='green'>$356.78 (+8.82%)</td>
+                    <td>$1.84</td>
+                    <td>1.16%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#24</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-08-08 00:00</td>
+                    <td>55144.79</td>
+                    <td>2024-08-10 00:00</td>
+                    <td>60825.82</td>
+                    <td class='green'>$432.54 (+10.25%)</td>
+                    <td>$2.33</td>
+                    <td>0.75%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#25</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-08-11 00:00</td>
+                    <td>60911.33</td>
+                    <td>2024-08-12 00:00</td>
+                    <td>58724.33</td>
+                    <td class='green'>$157.15 (+3.54%)</td>
+                    <td>$2.14</td>
+                    <td>1.55%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#26</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-08-13 00:00</td>
+                    <td>59334.77</td>
+                    <td>2024-08-14 00:00</td>
+                    <td>60599.28</td>
+                    <td class='red'>$-98.50 (-2.18%)</td>
+                    <td>$2.31</td>
+                    <td>3.78%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#27</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-08-18 00:00</td>
+                    <td>59480.09</td>
+                    <td>2024-08-24 00:00</td>
+                    <td>64050.05</td>
+                    <td class='red'>$-345.34 (-7.74%)</td>
+                    <td>$2.40</td>
+                    <td>9.20%</td>
+                    <td>6 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#28</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-08-24 00:00</td>
+                    <td>64050.05</td>
+                    <td>2024-08-26 00:00</td>
+                    <td>64207.15</td>
+                    <td class='green'>$8.37 (+0.20%)</td>
+                    <td>$2.15</td>
+                    <td>0.81%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#29</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-08-27 00:00</td>
+                    <td>62821.43</td>
+                    <td>2024-09-02 00:00</td>
+                    <td>57313.23</td>
+                    <td class='green'>$374.44 (+8.72%)</td>
+                    <td>$1.96</td>
+                    <td>0.62%</td>
+                    <td>6 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#30</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-09-03 00:00</td>
+                    <td>59120.29</td>
+                    <td>2024-09-07 00:00</td>
+                    <td>53973.76</td>
+                    <td class='green'>$387.86 (+8.66%)</td>
+                    <td>$2.04</td>
+                    <td>1.17%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#31</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-09-10 00:00</td>
+                    <td>57030.60</td>
+                    <td>2024-09-14 00:00</td>
+                    <td>60510.09</td>
+                    <td class='red'>$-287.51 (-6.15%)</td>
+                    <td>$2.48</td>
+                    <td>6.30%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#32</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-09-15 00:00</td>
+                    <td>59981.02</td>
+                    <td>2024-09-19 00:00</td>
+                    <td>61772.33</td>
+                    <td class='red'>$-137.52 (-3.04%)</td>
+                    <td>$2.33</td>
+                    <td>3.01%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#33</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-09-20 00:00</td>
+                    <td>62960.59</td>
+                    <td>2024-10-02 00:00</td>
+                    <td>60792.76</td>
+                    <td class='red'>$-155.61 (-3.49%)</td>
+                    <td>$2.15</td>
+                    <td>4.44%</td>
+                    <td>12 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#34</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-10-04 00:00</td>
+                    <td>60740.57</td>
+                    <td>2024-10-05 00:00</td>
+                    <td>62098.42</td>
+                    <td class='red'>$-100.11 (-2.29%)</td>
+                    <td>$2.24</td>
+                    <td>2.87%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#35</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-10-06 00:00</td>
+                    <td>62045.60</td>
+                    <td>2024-10-07 00:00</td>
+                    <td>62832.47</td>
+                    <td class='red'>$-57.07 (-1.32%)</td>
+                    <td>$2.19</td>
+                    <td>1.50%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#36</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-10-08 00:00</td>
+                    <td>62211.57</td>
+                    <td>2024-10-09 00:00</td>
+                    <td>62172.93</td>
+                    <td class='green'>$0.52 (+0.01%)</td>
+                    <td>$2.15</td>
+                    <td>1.59%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#37</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-10-10 00:00</td>
+                    <td>60648.14</td>
+                    <td>2024-10-12 00:00</td>
+                    <td>62527.48</td>
+                    <td class='green'>$130.92 (+3.05%)</td>
+                    <td>$2.21</td>
+                    <td>2.81%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#38</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-10-15 00:00</td>
+                    <td>66097.22</td>
+                    <td>2024-11-02 00:00</td>
+                    <td>69482.10</td>
+                    <td class='green'>$221.03 (+5.07%)</td>
+                    <td>$2.29</td>
+                    <td>1.96%</td>
+                    <td>18 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#39</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-11-03 00:00</td>
+                    <td>69388.61</td>
+                    <td>2024-12-20 00:00</td>
+                    <td>97442.37</td>
+                    <td class='green'>$1804.18 (+40.36%)</td>
+                    <td>$3.14</td>
+                    <td>3.68%</td>
+                    <td>47 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#40</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-12-20 00:00</td>
+                    <td>97442.37</td>
+                    <td>2024-12-22 00:00</td>
+                    <td>97311.46</td>
+                    <td class='green'>$4.53 (+0.08%)</td>
+                    <td>$2.68</td>
+                    <td>2.15%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#41</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2024-12-23 00:00</td>
+                    <td>95205.32</td>
+                    <td>2024-12-24 00:00</td>
+                    <td>94862.49</td>
+                    <td class='red'>$-22.02 (-0.41%)</td>
+                    <td>$2.68</td>
+                    <td>2.82%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#42</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-12-24 00:00</td>
+                    <td>94862.49</td>
+                    <td>2024-12-25 00:00</td>
+                    <td>98683.31</td>
+                    <td class='red'>$-218.67 (-4.08%)</td>
+                    <td>$2.79</td>
+                    <td>4.88%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#43</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2024-12-27 00:00</td>
+                    <td>95772.44</td>
+                    <td>2025-01-04 00:00</td>
+                    <td>98193.80</td>
+                    <td class='red'>$-135.40 (-2.58%)</td>
+                    <td>$2.69</td>
+                    <td>3.35%</td>
+                    <td>8 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#44</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-01-05 00:00</td>
+                    <td>98200.87</td>
+                    <td>2025-01-06 00:00</td>
+                    <td>98383.28</td>
+                    <td class='red'>$-12.22 (-0.24%)</td>
+                    <td>$2.59</td>
+                    <td>0.65%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#45</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-01-07 00:00</td>
+                    <td>102256.05</td>
+                    <td>2025-01-08 00:00</td>
+                    <td>96935.21</td>
+                    <td class='red'>$-271.61 (-5.25%)</td>
+                    <td>$2.45</td>
+                    <td>5.94%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#46</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-01-08 00:00</td>
+                    <td>96935.21</td>
+                    <td>2025-01-16 00:00</td>
+                    <td>100517.45</td>
+                    <td class='red'>$-188.70 (-3.75%)</td>
+                    <td>$2.61</td>
+                    <td>3.87%</td>
+                    <td>8 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#47</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-01-17 00:00</td>
+                    <td>99967.30</td>
+                    <td>2025-01-18 00:00</td>
+                    <td>104098.29</td>
+                    <td class='red'>$-206.71 (-4.18%)</td>
+                    <td>$2.57</td>
+                    <td>5.90%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#48</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-01-18 00:00</td>
+                    <td>104098.29</td>
+                    <td>2025-01-20 00:00</td>
+                    <td>101311.30</td>
+                    <td class='red'>$-131.81 (-2.73%)</td>
+                    <td>$2.35</td>
+                    <td>4.27%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#49</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-01-21 00:00</td>
+                    <td>102280.45</td>
+                    <td>2025-01-28 00:00</td>
+                    <td>102062.41</td>
+                    <td class='red'>$-12.54 (-0.26%)</td>
+                    <td>$2.38</td>
+                    <td>4.40%</td>
+                    <td>7 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#50</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-01-30 00:00</td>
+                    <td>103754.00</td>
+                    <td>2025-02-01 00:00</td>
+                    <td>102409.07</td>
+                    <td class='red'>$-64.06 (-1.35%)</td>
+                    <td>$2.35</td>
+                    <td>2.11%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#51</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-02-02 00:00</td>
+                    <td>100615.53</td>
+                    <td>2025-02-04 00:00</td>
+                    <td>101348.78</td>
+                    <td class='red'>$-36.83 (-0.78%)</td>
+                    <td>$2.38</td>
+                    <td>1.87%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#52</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-02-05 00:00</td>
+                    <td>97743.59</td>
+                    <td>2025-02-17 00:00</td>
+                    <td>96137.34</td>
+                    <td class='green'>$75.05 (+1.59%)</td>
+                    <td>$2.32</td>
+                    <td>2.45%</td>
+                    <td>12 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#53</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-02-19 00:00</td>
+                    <td>95690.87</td>
+                    <td>2025-02-26 00:00</td>
+                    <td>88662.65</td>
+                    <td class='red'>$-350.66 (-7.39%)</td>
+                    <td>$2.20</td>
+                    <td>10.07%</td>
+                    <td>7 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#54</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-02-26 00:00</td>
+                    <td>88662.65</td>
+                    <td>2025-02-28 00:00</td>
+                    <td>84725.51</td>
+                    <td class='green'>$200.66 (+4.39%)</td>
+                    <td>$2.18</td>
+                    <td>0.85%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#55</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-02-28 00:00</td>
+                    <td>84725.51</td>
+                    <td>2025-03-02 00:00</td>
+                    <td>86047.33</td>
+                    <td class='green'>$70.44 (+1.51%)</td>
+                    <td>$2.37</td>
+                    <td>7.63%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#56</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-03-04 00:00</td>
+                    <td>86238.40</td>
+                    <td>2025-03-06 00:00</td>
+                    <td>90587.88</td>
+                    <td class='green'>$234.63 (+4.99%)</td>
+                    <td>$2.47</td>
+                    <td>5.49%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#57</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-03-11 00:00</td>
+                    <td>78611.58</td>
+                    <td>2025-03-16 00:00</td>
+                    <td>84321.57</td>
+                    <td class='green'>$347.32 (+7.21%)</td>
+                    <td>$2.58</td>
+                    <td>2.55%</td>
+                    <td>5 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#58</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-03-16 00:00</td>
+                    <td>84321.57</td>
+                    <td>2025-03-17 00:00</td>
+                    <td>82591.03</td>
+                    <td class='green'>$99.96 (+2.00%)</td>
+                    <td>$2.44</td>
+                    <td>0.94%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#59</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-03-18 00:00</td>
+                    <td>83993.22</td>
+                    <td>2025-03-30 00:00</td>
+                    <td>82665.06</td>
+                    <td class='green'>$77.19 (+1.53%)</td>
+                    <td>$2.48</td>
+                    <td>5.68%</td>
+                    <td>12 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#60</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-03-30 00:00</td>
+                    <td>82665.06</td>
+                    <td>2025-03-31 00:00</td>
+                    <td>82373.52</td>
+                    <td class='red'>$-20.43 (-0.40%)</td>
+                    <td>$2.53</td>
+                    <td>1.33%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#61</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-04-03 00:00</td>
+                    <td>82499.78</td>
+                    <td>2025-04-07 00:00</td>
+                    <td>78445.69</td>
+                    <td class='green'>$246.45 (+4.87%)</td>
+                    <td>$2.41</td>
+                    <td>2.69%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#62</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-04-08 00:00</td>
+                    <td>79147.41</td>
+                    <td>2025-04-09 00:00</td>
+                    <td>76337.68</td>
+                    <td class='green'>$181.61 (+3.50%)</td>
+                    <td>$2.50</td>
+                    <td>2.17%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#63</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-04-10 00:00</td>
+                    <td>82631.74</td>
+                    <td>2025-04-11 00:00</td>
+                    <td>79591.38</td>
+                    <td class='red'>$-196.66 (-3.73%)</td>
+                    <td>$2.54</td>
+                    <td>5.04%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#64</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-04-14 00:00</td>
+                    <td>83743.25</td>
+                    <td>2025-04-22 00:00</td>
+                    <td>87533.72</td>
+                    <td class='red'>$-236.99 (-4.58%)</td>
+                    <td>$2.71</td>
+                    <td>5.64%</td>
+                    <td>8 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#65</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-04-23 00:00</td>
+                    <td>93461.68</td>
+                    <td>2025-06-07 00:00</td>
+                    <td>104267.57</td>
+                    <td class='green'>$581.78 (+11.51%)</td>
+                    <td>$2.82</td>
+                    <td>1.93%</td>
+                    <td>45 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#66</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-06-08 00:00</td>
+                    <td>105573.26</td>
+                    <td>2025-06-24 00:00</td>
+                    <td>105312.87</td>
+                    <td class='red'>$-15.85 (-0.30%)</td>
+                    <td>$2.67</td>
+                    <td>6.98%</td>
+                    <td>16 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#67</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-06-25 00:00</td>
+                    <td>106061.78</td>
+                    <td>2025-06-26 00:00</td>
+                    <td>107362.06</td>
+                    <td class='red'>$-68.13 (-1.28%)</td>
+                    <td>$2.70</td>
+                    <td>1.96%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#68</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-06-28 00:00</td>
+                    <td>107068.99</td>
+                    <td>2025-08-15 00:00</td>
+                    <td>118271.43</td>
+                    <td class='green'>$551.73 (+10.41%)</td>
+                    <td>$2.93</td>
+                    <td>1.84%</td>
+                    <td>48 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#69</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-08-17 00:00</td>
+                    <td>117404.14</td>
+                    <td>2025-08-28 00:00</td>
+                    <td>111239.76</td>
+                    <td class='red'>$-295.40 (-5.30%)</td>
+                    <td>$2.64</td>
+                    <td>7.44%</td>
+                    <td>11 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#70</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-08-29 00:00</td>
+                    <td>112589.41</td>
+                    <td>2025-10-11 00:00</td>
+                    <td>112751.94</td>
+                    <td class='green'>$5.12 (+0.09%)</td>
+                    <td>$2.72</td>
+                    <td>9.41%</td>
+                    <td>43 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#71</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-10-11 00:00</td>
+                    <td>112751.94</td>
+                    <td>2025-10-25 00:00</td>
+                    <td>111027.10</td>
+                    <td class='green'>$80.36 (+1.48%)</td>
+                    <td>$2.67</td>
+                    <td>2.85%</td>
+                    <td>14 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#72</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-10-28 00:00</td>
+                    <td>114084.83</td>
+                    <td>2025-10-30 00:00</td>
+                    <td>110043.30</td>
+                    <td class='green'>$191.03 (+3.49%)</td>
+                    <td>$2.64</td>
+                    <td>1.75%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#73</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-10-31 00:00</td>
+                    <td>108301.21</td>
+                    <td>2025-11-01 00:00</td>
+                    <td>109629.93</td>
+                    <td class='red'>$-71.04 (-1.28%)</td>
+                    <td>$2.81</td>
+                    <td>2.67%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#74</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-11-03 00:00</td>
+                    <td>110562.80</td>
+                    <td>2025-11-06 00:00</td>
+                    <td>103864.38</td>
+                    <td class='red'>$-337.26 (-6.11%)</td>
+                    <td>$2.59</td>
+                    <td>10.51%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#75</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-11-06 00:00</td>
+                    <td>103864.38</td>
+                    <td>2025-11-07 00:00</td>
+                    <td>101366.31</td>
+                    <td class='green'>$126.16 (+2.36%)</td>
+                    <td>$2.61</td>
+                    <td>0.32%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#76</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-11-08 00:00</td>
+                    <td>103318.42</td>
+                    <td>2025-11-11 00:00</td>
+                    <td>106032.33</td>
+                    <td class='red'>$-145.04 (-2.68%)</td>
+                    <td>$2.78</td>
+                    <td>3.24%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#77</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-11-12 00:00</td>
+                    <td>103038.39</td>
+                    <td>2025-11-15 00:00</td>
+                    <td>94612.92</td>
+                    <td class='green'>$434.35 (+8.13%)</td>
+                    <td>$2.45</td>
+                    <td>2.23%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#78</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-11-15 00:00</td>
+                    <td>94612.92</td>
+                    <td>2025-11-27 00:00</td>
+                    <td>90465.91</td>
+                    <td class='red'>$-246.26 (-4.43%)</td>
+                    <td>$2.66</td>
+                    <td>14.81%</td>
+                    <td>12 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#79</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-11-27 00:00</td>
+                    <td>90465.91</td>
+                    <td>2025-12-01 00:00</td>
+                    <td>90378.08</td>
+                    <td class='green'>$2.56 (+0.05%)</td>
+                    <td>$2.71</td>
+                    <td>2.90%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#80</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-12-01 00:00</td>
+                    <td>90378.08</td>
+                    <td>2025-12-03 00:00</td>
+                    <td>91259.62</td>
+                    <td class='green'>$50.25 (+0.92%)</td>
+                    <td>$2.74</td>
+                    <td>7.25%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#81</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-12-03 00:00</td>
+                    <td>91259.62</td>
+                    <td>2025-12-15 00:00</td>
+                    <td>88189.79</td>
+                    <td class='green'>$180.92 (+3.32%)</td>
+                    <td>$2.64</td>
+                    <td>3.65%</td>
+                    <td>12 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#82</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-12-15 00:00</td>
+                    <td>88189.79</td>
+                    <td>2025-12-16 00:00</td>
+                    <td>86414.79</td>
+                    <td class='red'>$-114.34 (-2.06%)</td>
+                    <td>$2.72</td>
+                    <td>3.45%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#83</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2025-12-16 00:00</td>
+                    <td>86414.79</td>
+                    <td>2025-12-25 00:00</td>
+                    <td>87686.97</td>
+                    <td class='red'>$-83.57 (-1.52%)</td>
+                    <td>$2.78</td>
+                    <td>4.83%</td>
+                    <td>9 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#84</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2025-12-27 00:00</td>
+                    <td>87387.03</td>
+                    <td>2026-02-01 00:00</td>
+                    <td>78725.35</td>
+                    <td class='red'>$-542.08 (-9.96%)</td>
+                    <td>$2.45</td>
+                    <td>13.35%</td>
+                    <td>36 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#85</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-02-01 00:00</td>
+                    <td>78725.35</td>
+                    <td>2026-02-02 00:00</td>
+                    <td>76983.61</td>
+                    <td class='green'>$111.89 (+2.16%)</td>
+                    <td>$2.53</td>
+                    <td>0.89%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#86</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-02-03 00:00</td>
+                    <td>78754.35</td>
+                    <td>2026-02-06 00:00</td>
+                    <td>62897.29</td>
+                    <td class='red'>$-1054.43 (-20.17%)</td>
+                    <td>$2.09</td>
+                    <td>20.84%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#87</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-02-06 00:00</td>
+                    <td>62897.29</td>
+                    <td>2026-02-09 00:00</td>
+                    <td>70344.45</td>
+                    <td class='red'>$-558.87 (-11.90%)</td>
+                    <td>$2.63</td>
+                    <td>14.90%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#88</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-02-10 00:00</td>
+                    <td>70152.03</td>
+                    <td>2026-02-11 00:00</td>
+                    <td>68827.51</td>
+                    <td class='red'>$-85.57 (-1.94%)</td>
+                    <td>$2.17</td>
+                    <td>3.35%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#89</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-02-12 00:00</td>
+                    <td>67095.94</td>
+                    <td>2026-02-26 00:00</td>
+                    <td>67974.44</td>
+                    <td class='green'>$55.05 (+1.26%)</td>
+                    <td>$2.22</td>
+                    <td>6.83%</td>
+                    <td>14 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#90</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-02-27 00:00</td>
+                    <td>67471.69</td>
+                    <td>2026-02-28 00:00</td>
+                    <td>65885.26</td>
+                    <td class='green'>$101.30 (+2.30%)</td>
+                    <td>$2.15</td>
+                    <td>1.10%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#91</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-02-28 00:00</td>
+                    <td>65885.26</td>
+                    <td>2026-03-01 00:00</td>
+                    <td>66959.87</td>
+                    <td class='green'>$70.31 (+1.58%)</td>
+                    <td>$2.26</td>
+                    <td>4.33%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#92</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-03-01 00:00</td>
+                    <td>66959.87</td>
+                    <td>2026-03-02 00:00</td>
+                    <td>65789.64</td>
+                    <td class='green'>$76.15 (+1.70%)</td>
+                    <td>$2.20</td>
+                    <td>1.85%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#93</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-03-04 00:00</td>
+                    <td>68324.34</td>
+                    <td>2026-03-05 00:00</td>
+                    <td>72681.30</td>
+                    <td class='red'>$-290.67 (-6.43%)</td>
+                    <td>$2.40</td>
+                    <td>8.38%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#94</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-03-05 00:00</td>
+                    <td>72681.30</td>
+                    <td>2026-03-06 00:00</td>
+                    <td>70876.84</td>
+                    <td class='red'>$-110.73 (-2.53%)</td>
+                    <td>$2.13</td>
+                    <td>2.80%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#95</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-03-07 00:00</td>
+                    <td>68100.40</td>
+                    <td>2026-03-16 00:00</td>
+                    <td>72829.81</td>
+                    <td class='red'>$-302.15 (-7.00%)</td>
+                    <td>$2.31</td>
+                    <td>8.54%</td>
+                    <td>9 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#96</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-03-18 00:00</td>
+                    <td>73894.59</td>
+                    <td>2026-04-04 00:00</td>
+                    <td>66977.68</td>
+                    <td class='green'>$388.01 (+9.32%)</td>
+                    <td>$1.89</td>
+                    <td>1.05%</td>
+                    <td>17 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#97</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-04-07 00:00</td>
+                    <td>68839.89</td>
+                    <td>2026-04-08 00:00</td>
+                    <td>71938.60</td>
+                    <td class='red'>$-198.46 (-4.55%)</td>
+                    <td>$2.28</td>
+                    <td>5.70%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#98</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-04-09 00:00</td>
+                    <td>71055.72</td>
+                    <td>2026-04-10 00:00</td>
+                    <td>71802.34</td>
+                    <td class='red'>$-46.89 (-1.10%)</td>
+                    <td>$2.15</td>
+                    <td>2.94%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#99</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-04-12 00:00</td>
+                    <td>73057.77</td>
+                    <td>2026-04-13 00:00</td>
+                    <td>70727.41</td>
+                    <td class='red'>$-137.09 (-3.24%)</td>
+                    <td>$2.05</td>
+                    <td>3.49%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#100</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-04-16 00:00</td>
+                    <td>74824.95</td>
+                    <td>2026-06-03 00:00</td>
+                    <td>66747.49</td>
+                    <td class='red'>$-451.36 (-10.84%)</td>
+                    <td>$1.86</td>
+                    <td>11.54%</td>
+                    <td>48 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#101</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-06-04 00:00</td>
+                    <td>64129.92</td>
+                    <td>2026-06-08 00:00</td>
+                    <td>63344.68</td>
+                    <td class='green'>$46.26 (+1.18%)</td>
+                    <td>$1.94</td>
+                    <td>0.99%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#102</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-06-08 00:00</td>
+                    <td>63344.68</td>
+                    <td>2026-06-15 00:00</td>
+                    <td>65733.30</td>
+                    <td class='green'>$147.25 (+3.72%)</td>
+                    <td>$2.05</td>
+                    <td>4.09%</td>
+                    <td>7 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#103</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-06-18 00:00</td>
+                    <td>64522.30</td>
+                    <td>2026-06-25 00:00</td>
+                    <td>61065.78</td>
+                    <td class='red'>$-217.90 (-5.40%)</td>
+                    <td>$1.91</td>
+                    <td>8.40%</td>
+                    <td>7 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#104</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-06-26 00:00</td>
+                    <td>59806.60</td>
+                    <td>2026-06-28 00:00</td>
+                    <td>60017.00</td>
+                    <td class='green'>$11.83 (+0.30%)</td>
+                    <td>$1.97</td>
+                    <td>2.46%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#105</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-06-28 00:00</td>
+                    <td>60017.00</td>
+                    <td>2026-06-30 00:00</td>
+                    <td>60272.25</td>
+                    <td class='red'>$-18.67 (-0.48%)</td>
+                    <td>$1.97</td>
+                    <td>1.27%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#106</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-06-30 00:00</td>
+                    <td>60272.25</td>
+                    <td>2026-07-01 00:00</td>
+                    <td>58612.99</td>
+                    <td class='red'>$-109.73 (-2.80%)</td>
+                    <td>$1.90</td>
+                    <td>3.44%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#107</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-07-01 00:00</td>
+                    <td>58612.99</td>
+                    <td>2026-07-02 00:00</td>
+                    <td>60036.00</td>
+                    <td class='red'>$-95.71 (-2.48%)</td>
+                    <td>$1.98</td>
+                    <td>4.64%</td>
+                    <td>1 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#108</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-07-03 00:00</td>
+                    <td>61547.69</td>
+                    <td>2026-07-05 00:00</td>
+                    <td>63156.64</td>
+                    <td class='red'>$-101.61 (-2.67%)</td>
+                    <td>$1.96</td>
+                    <td>3.11%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#109</td>
+                    <td><span class='badge short'>Short</span></td>
+                    <td>2026-07-07 00:00</td>
+                    <td>64030.12</td>
+                    <td>2026-07-10 00:00</td>
+                    <td>63242.66</td>
+                    <td class='green'>$44.39 (+1.18%)</td>
+                    <td>$1.86</td>
+                    <td>0.44%</td>
+                    <td>3 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#110</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-07-13 00:00</td>
+                    <td>63792.76</td>
+                    <td>2026-07-15 00:00</td>
+                    <td>65030.98</td>
+                    <td class='green'>$71.47 (+1.89%)</td>
+                    <td>$1.93</td>
+                    <td>3.08%</td>
+                    <td>2 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#111</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-07-17 00:00</td>
+                    <td>63842.97</td>
+                    <td>2026-07-21 00:00</td>
+                    <td>65242.46</td>
+                    <td class='green'>$81.71 (+2.14%)</td>
+                    <td>$1.95</td>
+                    <td>2.04%</td>
+                    <td>4 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#112</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-07-22 00:00</td>
+                    <td>66569.46</td>
+                    <td>2026-10-26 00:00</td>
+                    <td>80138.06</td>
+                    <td class='green'>$783.66 (+20.32%)</td>
+                    <td>$2.32</td>
+                    <td>6.45%</td>
+                    <td>96 barras</td>
+                    <td>Signal Reversal / Exit</td>
+                </tr>
+<tr>
+                    <td>#113</td>
+                    <td><span class='badge long'>Long</span></td>
+                    <td>2026-10-27 00:00</td>
+                    <td>80166.59</td>
+                    <td>2026-11-07 00:00</td>
+                    <td>75852.42</td>
+                    <td class='red'>$-230.56 (-5.43%)</td>
+                    <td>$2.01</td>
+                    <td>6.58%</td>
+                    <td>11 barras</td>
+                    <td>End of Data Horizon</td>
+                </tr>
+
+        </tbody>
+    </table>
+
+    <script>
+        const ctx = document.getElementById('equityChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ["02/08 00:00","02/09 00:00","02/10 00:00","02/11 00:00","02/12 00:00","02/13 00:00","02/14 00:00","02/15 00:00","02/16 00:00","02/17 00:00","02/18 00:00","02/19 00:00","02/20 00:00","02/21 00:00","02/22 00:00","02/23 00:00","02/24 00:00","02/25 00:00","02/26 00:00","02/27 00:00","02/28 00:00","02/29 00:00","03/01 00:00","03/02 00:00","03/03 00:00","03/04 00:00","03/05 00:00","03/06 00:00","03/07 00:00","03/08 00:00","03/09 00:00","03/10 00:00","03/11 00:00","03/12 00:00","03/13 00:00","03/14 00:00","03/15 00:00","03/16 00:00","03/17 00:00","03/18 00:00","03/19 00:00","03/20 00:00","03/21 00:00","03/22 00:00","03/23 00:00","03/24 00:00","03/25 00:00","03/26 00:00","03/27 00:00","03/28 00:00","03/29 00:00","03/30 00:00","03/31 00:00","04/01 00:00","04/02 00:00","04/03 00:00","04/04 00:00","04/05 00:00","04/06 00:00","04/07 00:00","04/08 00:00","04/09 00:00","04/10 00:00","04/11 00:00","04/12 00:00","04/13 00:00","04/14 00:00","04/15 00:00","04/16 00:00","04/17 00:00","04/18 00:00","04/19 00:00","04/20 00:00","04/21 00:00","04/22 00:00","04/23 00:00","04/24 00:00","04/25 00:00","04/26 00:00","04/27 00:00","04/28 00:00","04/29 00:00","04/30 00:00","05/01 00:00","05/02 00:00","05/03 00:00","05/04 00:00","05/05 00:00","05/06 00:00","05/07 00:00","05/08 00:00","05/09 00:00","05/10 00:00","05/11 00:00","05/12 00:00","05/13 00:00","05/14 00:00","05/15 00:00","05/16 00:00","05/17 00:00","05/18 00:00","05/19 00:00","05/20 00:00","05/21 00:00","05/22 00:00","05/23 00:00","05/24 00:00","05/25 00:00","05/26 00:00","05/27 00:00","05/28 00:00","05/29 00:00","05/30 00:00","05/31 00:00","06/01 00:00","06/02 00:00","06/03 00:00","06/04 00:00","06/05 00:00","06/06 00:00","06/07 00:00","06/08 00:00","06/09 00:00","06/10 00:00","06/11 00:00","06/12 00:00","06/13 00:00","06/14 00:00","06/15 00:00","06/16 00:00","06/17 00:00","06/18 00:00","06/19 00:00","06/20 00:00","06/21 00:00","06/22 00:00","06/23 00:00","06/24 00:00","06/25 00:00","06/26 00:00","06/27 00:00","06/28 00:00","06/29 00:00","06/30 00:00","07/01 00:00","07/02 00:00","07/03 00:00","07/04 00:00","07/05 00:00","07/06 00:00","07/07 00:00","07/08 00:00","07/09 00:00","07/10 00:00","07/11 00:00","07/12 00:00","07/13 00:00","07/14 00:00","07/15 00:00","07/16 00:00","07/17 00:00","07/18 00:00","07/19 00:00","07/20 00:00","07/21 00:00","07/22 00:00","07/23 00:00","07/24 00:00","07/25 00:00","07/26 00:00","07/27 00:00","07/28 00:00","07/29 00:00","07/30 00:00","07/31 00:00","08/01 00:00","08/02 00:00","08/03 00:00","08/04 00:00","08/05 00:00","08/06 00:00","08/07 00:00","08/08 00:00","08/09 00:00","08/10 00:00","08/11 00:00","08/12 00:00","08/13 00:00","08/14 00:00","08/15 00:00","08/16 00:00","08/17 00:00","08/18 00:00","08/19 00:00","08/20 00:00","08/21 00:00","08/22 00:00","08/23 00:00","08/24 00:00","08/25 00:00","08/26 00:00","08/27 00:00","08/28 00:00","08/29 00:00","08/30 00:00","08/31 00:00","09/01 00:00","09/02 00:00","09/03 00:00","09/04 00:00","09/05 00:00","09/06 00:00","09/07 00:00","09/08 00:00","09/09 00:00","09/10 00:00","09/11 00:00","09/12 00:00","09/13 00:00","09/14 00:00","09/15 00:00","09/16 00:00","09/17 00:00","09/18 00:00","09/19 00:00","09/20 00:00","09/21 00:00","09/22 00:00","09/23 00:00","09/24 00:00","09/25 00:00","09/26 00:00","09/27 00:00","09/28 00:00","09/29 00:00","09/30 00:00","10/01 00:00","10/02 00:00","10/03 00:00","10/04 00:00","10/05 00:00","10/06 00:00","10/07 00:00","10/08 00:00","10/09 00:00","10/10 00:00","10/11 00:00","10/12 00:00","10/13 00:00","10/14 00:00","10/15 00:00","10/16 00:00","10/17 00:00","10/18 00:00","10/19 00:00","10/20 00:00","10/21 00:00","10/22 00:00","10/23 00:00","10/24 00:00","10/25 00:00","10/26 00:00","10/27 00:00","10/28 00:00","10/29 00:00","10/30 00:00","10/31 00:00","11/01 00:00","11/02 00:00","11/03 00:00","11/04 00:00","11/05 00:00","11/06 00:00","11/07 00:00","11/08 00:00","11/09 00:00","11/10 00:00","11/11 00:00","11/12 00:00","11/13 00:00","11/14 00:00","11/15 00:00","11/16 00:00","11/17 00:00","11/18 00:00","11/19 00:00","11/20 00:00","11/21 00:00","11/22 00:00","11/23 00:00","11/24 00:00","11/25 00:00","11/26 00:00","11/27 00:00","11/28 00:00","11/29 00:00","11/30 00:00","12/01 00:00","12/02 00:00","12/03 00:00","12/04 00:00","12/05 00:00","12/06 00:00","12/07 00:00","12/08 00:00","12/09 00:00","12/10 00:00","12/11 00:00","12/12 00:00","12/13 00:00","12/14 00:00","12/15 00:00","12/16 00:00","12/17 00:00","12/18 00:00","12/19 00:00","12/20 00:00","12/21 00:00","12/22 00:00","12/23 00:00","12/24 00:00","12/25 00:00","12/26 00:00","12/27 00:00","12/28 00:00","12/29 00:00","12/30 00:00","12/31 00:00","01/01 00:00","01/02 00:00","01/03 00:00","01/04 00:00","01/05 00:00","01/06 00:00","01/07 00:00","01/08 00:00","01/09 00:00","01/10 00:00","01/11 00:00","01/12 00:00","01/13 00:00","01/14 00:00","01/15 00:00","01/16 00:00","01/17 00:00","01/18 00:00","01/19 00:00","01/20 00:00","01/21 00:00","01/22 00:00","01/23 00:00","01/24 00:00","01/25 00:00","01/26 00:00","01/27 00:00","01/28 00:00","01/29 00:00","01/30 00:00","01/31 00:00","02/01 00:00","02/02 00:00","02/03 00:00","02/04 00:00","02/05 00:00","02/06 00:00","02/07 00:00","02/08 00:00","02/09 00:00","02/10 00:00","02/11 00:00","02/12 00:00","02/13 00:00","02/14 00:00","02/15 00:00","02/16 00:00","02/17 00:00","02/18 00:00","02/19 00:00","02/20 00:00","02/21 00:00","02/22 00:00","02/23 00:00","02/24 00:00","02/25 00:00","02/26 00:00","02/27 00:00","02/28 00:00","03/01 00:00","03/02 00:00","03/03 00:00","03/04 00:00","03/05 00:00","03/06 00:00","03/07 00:00","03/08 00:00","03/09 00:00","03/10 00:00","03/11 00:00","03/12 00:00","03/13 00:00","03/14 00:00","03/15 00:00","03/16 00:00","03/17 00:00","03/18 00:00","03/19 00:00","03/20 00:00","03/21 00:00","03/22 00:00","03/23 00:00","03/24 00:00","03/25 00:00","03/26 00:00","03/27 00:00","03/28 00:00","03/29 00:00","03/30 00:00","03/31 00:00","04/01 00:00","04/02 00:00","04/03 00:00","04/04 00:00","04/05 00:00","04/06 00:00","04/07 00:00","04/08 00:00","04/09 00:00","04/10 00:00","04/11 00:00","04/12 00:00","04/13 00:00","04/14 00:00","04/15 00:00","04/16 00:00","04/17 00:00","04/18 00:00","04/19 00:00","04/20 00:00","04/21 00:00","04/22 00:00","04/23 00:00","04/24 00:00","04/25 00:00","04/26 00:00","04/27 00:00","04/28 00:00","04/29 00:00","04/30 00:00","05/01 00:00","05/02 00:00","05/03 00:00","05/04 00:00","05/05 00:00","05/06 00:00","05/07 00:00","05/08 00:00","05/09 00:00","05/10 00:00","05/11 00:00","05/12 00:00","05/13 00:00","05/14 00:00","05/15 00:00","05/16 00:00","05/17 00:00","05/18 00:00","05/19 00:00","05/20 00:00","05/21 00:00","05/22 00:00","05/23 00:00","05/24 00:00","05/25 00:00","05/26 00:00","05/27 00:00","05/28 00:00","05/29 00:00","05/30 00:00","05/31 00:00","06/01 00:00","06/02 00:00","06/03 00:00","06/04 00:00","06/05 00:00","06/06 00:00","06/07 00:00","06/08 00:00","06/09 00:00","06/10 00:00","06/11 00:00","06/12 00:00","06/13 00:00","06/14 00:00","06/15 00:00","06/16 00:00","06/17 00:00","06/18 00:00","06/19 00:00","06/20 00:00","06/21 00:00","06/22 00:00","06/23 00:00","06/24 00:00","06/25 00:00","06/26 00:00","06/27 00:00","06/28 00:00","06/29 00:00","06/30 00:00","07/01 00:00","07/02 00:00","07/03 00:00","07/04 00:00","07/05 00:00","07/06 00:00","07/07 00:00","07/08 00:00","07/09 00:00","07/10 00:00","07/11 00:00","07/12 00:00","07/13 00:00","07/14 00:00","07/15 00:00","07/16 00:00","07/17 00:00","07/18 00:00","07/19 00:00","07/20 00:00","07/21 00:00","07/22 00:00","07/23 00:00","07/24 00:00","07/25 00:00","07/26 00:00","07/27 00:00","07/28 00:00","07/29 00:00","07/30 00:00","07/31 00:00","08/01 00:00","08/02 00:00","08/03 00:00","08/04 00:00","08/05 00:00","08/06 00:00","08/07 00:00","08/08 00:00","08/09 00:00","08/10 00:00","08/11 00:00","08/12 00:00","08/13 00:00","08/14 00:00","08/15 00:00","08/16 00:00","08/17 00:00","08/18 00:00","08/19 00:00","08/20 00:00","08/21 00:00","08/22 00:00","08/23 00:00","08/24 00:00","08/25 00:00","08/26 00:00","08/27 00:00","08/28 00:00","08/29 00:00","08/30 00:00","08/31 00:00","09/01 00:00","09/02 00:00","09/03 00:00","09/04 00:00","09/05 00:00","09/06 00:00","09/07 00:00","09/08 00:00","09/09 00:00","09/10 00:00","09/11 00:00","09/12 00:00","09/13 00:00","09/14 00:00","09/15 00:00","09/16 00:00","09/17 00:00","09/18 00:00","09/19 00:00","09/20 00:00","09/21 00:00","09/22 00:00","09/23 00:00","09/24 00:00","09/25 00:00","09/26 00:00","09/27 00:00","09/28 00:00","09/29 00:00","09/30 00:00","10/01 00:00","10/02 00:00","10/03 00:00","10/04 00:00","10/05 00:00","10/06 00:00","10/07 00:00","10/08 00:00","10/09 00:00","10/10 00:00","10/11 00:00","10/12 00:00","10/13 00:00","10/14 00:00","10/15 00:00","10/16 00:00","10/17 00:00","10/18 00:00","10/19 00:00","10/20 00:00","10/21 00:00","10/22 00:00","10/23 00:00","10/24 00:00","10/25 00:00","10/26 00:00","10/27 00:00","10/28 00:00","10/29 00:00","10/30 00:00","10/31 00:00","11/01 00:00","11/02 00:00","11/03 00:00","11/04 00:00","11/05 00:00","11/06 00:00","11/07 00:00","11/08 00:00","11/09 00:00","11/10 00:00","11/11 00:00","11/12 00:00","11/13 00:00","11/14 00:00","11/15 00:00","11/16 00:00","11/17 00:00","11/18 00:00","11/19 00:00","11/20 00:00","11/21 00:00","11/22 00:00","11/23 00:00","11/24 00:00","11/25 00:00","11/26 00:00","11/27 00:00","11/28 00:00","11/29 00:00","11/30 00:00","12/01 00:00","12/02 00:00","12/03 00:00","12/04 00:00","12/05 00:00","12/06 00:00","12/07 00:00","12/08 00:00","12/09 00:00","12/10 00:00","12/11 00:00","12/12 00:00","12/13 00:00","12/14 00:00","12/15 00:00","12/16 00:00","12/17 00:00","12/18 00:00","12/19 00:00","12/20 00:00","12/21 00:00","12/22 00:00","12/23 00:00","12/24 00:00","12/25 00:00","12/26 00:00","12/27 00:00","12/28 00:00","12/29 00:00","12/30 00:00","12/31 00:00","01/01 00:00","01/02 00:00","01/03 00:00","01/04 00:00","01/05 00:00","01/06 00:00","01/07 00:00","01/08 00:00","01/09 00:00","01/10 00:00","01/11 00:00","01/12 00:00","01/13 00:00","01/14 00:00","01/15 00:00","01/16 00:00","01/17 00:00","01/18 00:00","01/19 00:00","01/20 00:00","01/21 00:00","01/22 00:00","01/23 00:00","01/24 00:00","01/25 00:00","01/26 00:00","01/27 00:00","01/28 00:00","01/29 00:00","01/30 00:00","01/31 00:00","02/01 00:00","02/02 00:00","02/03 00:00","02/04 00:00","02/05 00:00","02/06 00:00","02/07 00:00","02/08 00:00","02/09 00:00","02/10 00:00","02/11 00:00","02/12 00:00","02/13 00:00","02/14 00:00","02/15 00:00","02/16 00:00","02/17 00:00","02/18 00:00","02/19 00:00","02/20 00:00","02/21 00:00","02/22 00:00","02/23 00:00","02/24 00:00","02/25 00:00","02/26 00:00","02/27 00:00","02/28 00:00","03/01 00:00","03/02 00:00","03/03 00:00","03/04 00:00","03/05 00:00","03/06 00:00","03/07 00:00","03/08 00:00","03/09 00:00","03/10 00:00","03/11 00:00","03/12 00:00","03/13 00:00","03/14 00:00","03/15 00:00","03/16 00:00","03/17 00:00","03/18 00:00","03/19 00:00","03/20 00:00","03/21 00:00","03/22 00:00","03/23 00:00","03/24 00:00","03/25 00:00","03/26 00:00","03/27 00:00","03/28 00:00","03/29 00:00","03/30 00:00","03/31 00:00","04/01 00:00","04/02 00:00","04/03 00:00","04/04 00:00","04/05 00:00","04/06 00:00","04/07 00:00","04/08 00:00","04/09 00:00","04/10 00:00","04/11 00:00","04/12 00:00","04/13 00:00","04/14 00:00","04/15 00:00","04/16 00:00","04/17 00:00","04/18 00:00","04/19 00:00","04/20 00:00","04/21 00:00","04/22 00:00","04/23 00:00","04/24 00:00","04/25 00:00","04/26 00:00","04/27 00:00","04/28 00:00","04/29 00:00","04/30 00:00","05/01 00:00","05/02 00:00","05/03 00:00","05/04 00:00","05/05 00:00","05/06 00:00","05/07 00:00","05/08 00:00","05/09 00:00","05/10 00:00","05/11 00:00","05/12 00:00","05/13 00:00","05/14 00:00","05/15 00:00","05/16 00:00","05/17 00:00","05/18 00:00","05/19 00:00","05/20 00:00","05/21 00:00","05/22 00:00","05/23 00:00","05/24 00:00","05/25 00:00","05/26 00:00","05/27 00:00","05/28 00:00","05/29 00:00","05/30 00:00","05/31 00:00","06/01 00:00","06/02 00:00","06/03 00:00","06/04 00:00","06/05 00:00","06/06 00:00","06/07 00:00","06/08 00:00","06/09 00:00","06/10 00:00","06/11 00:00","06/12 00:00","06/13 00:00","06/14 00:00","06/15 00:00","06/16 00:00","06/17 00:00","06/18 00:00","06/19 00:00","06/20 00:00","06/21 00:00","06/22 00:00","06/23 00:00","06/24 00:00","06/25 00:00","06/26 00:00","06/27 00:00","06/28 00:00","06/29 00:00","06/30 00:00","07/01 00:00","07/02 00:00","07/03 00:00","07/04 00:00","07/05 00:00","07/06 00:00","07/07 00:00","07/08 00:00","07/09 00:00","07/10 00:00","07/11 00:00","07/12 00:00","07/13 00:00","07/14 00:00","07/15 00:00","07/16 00:00","07/17 00:00","07/18 00:00","07/19 00:00","07/20 00:00","07/21 00:00","07/22 00:00","07/23 00:00","07/24 00:00","07/25 00:00","07/26 00:00","07/27 00:00","07/28 00:00","07/29 00:00","07/30 00:00","07/31 00:00","08/01 00:00","08/02 00:00","08/03 00:00","08/04 00:00","08/05 00:00","08/06 00:00","08/07 00:00","08/08 00:00","08/09 00:00","08/10 00:00","08/11 00:00","08/12 00:00","08/13 00:00","08/14 00:00","08/15 00:00","08/16 00:00","08/17 00:00","08/18 00:00","08/19 00:00","08/20 00:00","08/21 00:00","08/22 00:00","08/23 00:00","08/24 00:00","08/25 00:00","08/26 00:00","08/27 00:00","08/28 00:00","08/29 00:00","08/30 00:00","08/31 00:00","09/01 00:00","09/02 00:00","09/03 00:00","09/04 00:00","09/05 00:00","09/06 00:00","09/07 00:00","09/08 00:00","09/09 00:00","09/10 00:00","09/11 00:00","09/12 00:00","09/13 00:00","09/14 00:00","09/15 00:00","09/16 00:00","09/17 00:00","09/18 00:00","09/19 00:00","09/20 00:00","09/21 00:00","09/22 00:00","09/23 00:00","09/24 00:00","09/25 00:00","09/26 00:00","09/27 00:00","09/28 00:00","09/29 00:00","09/30 00:00","10/01 00:00","10/02 00:00","10/03 00:00","10/04 00:00","10/05 00:00","10/06 00:00","10/07 00:00","10/08 00:00","10/09 00:00","10/10 00:00","10/11 00:00","10/12 00:00","10/13 00:00","10/14 00:00","10/15 00:00","10/16 00:00","10/17 00:00","10/18 00:00","10/19 00:00","10/20 00:00","10/21 00:00","10/22 00:00","10/23 00:00","10/24 00:00","10/25 00:00","10/26 00:00","10/27 00:00","10/28 00:00","10/29 00:00","10/30 00:00","10/31 00:00","11/01 00:00","11/02 00:00","11/03 00:00","11/04 00:00","11/05 00:00","11/06 00:00","11/07 00:00"],
+                datasets: [{
+                    label: 'Equity Curve OOS ($)',
+                    data: [10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,10000.00,9864.22,9570.17,9786.74,9731.88,9334.66,9748.02,9584.22,9464.85,9478.39,9703.87,9890.84,9898.40,9862.13,9953.90,9888.77,9869.98,9988.87,9874.72,9581.61,9616.57,9613.34,9563.16,9638.61,9671.20,9829.75,9656.16,9652.76,9606.69,9409.27,9191.20,9188.14,9188.14,9188.14,9188.14,9349.28,9345.96,9345.96,9342.73,9339.46,9364.52,9513.01,9498.42,9549.33,9570.86,9594.87,9542.62,9765.88,9927.14,9924.29,9924.29,9924.29,9911.50,9977.28,10043.55,10130.47,9984.36,10161.00,10158.99,10107.87,9994.76,10100.61,9741.03,9737.43,9600.49,9585.84,9582.49,9582.49,9492.09,9426.26,9346.01,9342.82,9390.01,9336.67,9399.95,9329.22,9278.40,9275.17,9216.83,9232.22,9232.14,9302.98,9420.19,9458.87,9437.91,9339.99,9336.93,9359.84,9352.50,9201.52,9265.94,9262.70,9208.91,9221.68,9252.79,9240.83,9148.67,9134.73,9127.49,9077.12,9085.33,9012.38,8810.12,8915.02,8849.76,8846.81,8752.07,8749.04,8874.02,8883.19,8828.37,8690.18,8463.66,8433.46,8548.30,8716.49,8777.39,8774.29,8795.72,8824.90,8783.38,8683.98,8563.50,8266.72,8280.82,8219.81,8220.49,8049.16,8072.31,8134.18,8095.96,7999.66,7965.87,7991.45,8118.65,8117.96,8139.28,8050.87,8048.05,8048.05,8090.43,8087.58,8137.39,8304.24,8576.66,8444.91,8442.34,8940.93,8876.02,8872.76,9030.69,9027.69,8930.16,8926.93,8926.93,8926.93,8926.93,9003.70,8927.82,8959.69,8798.94,8857.48,8582.73,8584.38,8588.60,8585.59,8816.22,8842.19,8820.04,8836.10,8846.35,8960.61,8957.88,9079.32,9042.72,9178.40,9346.36,9343.49,9343.49,9343.49,9291.57,9315.98,9250.91,9057.12,9053.65,9115.47,9184.75,9026.26,8917.13,8913.87,8928.66,8939.13,8955.40,8938.50,9003.81,8925.19,9068.32,9110.51,9116.74,9098.62,8937.62,8759.10,8756.03,8756.03,8656.86,8653.73,8597.57,8594.50,8595.88,8592.87,8567.93,8724.75,8721.65,8721.65,8721.65,8783.92,8819.94,8806.86,8873.24,8869.94,8913.09,8803.94,8807.14,8757.17,8858.09,8759.13,8785.15,8846.44,8974.46,9157.50,9131.65,8996.22,8943.71,8940.50,8898.79,8839.14,8937.19,9336.62,9355.03,9397.03,9407.83,9645.72,10179.02,10134.18,10290.29,10093.82,10332.61,10303.93,10256.84,10296.01,10414.99,10542.27,10801.93,10838.97,10760.40,10775.06,10460.03,10392.72,10643.84,10629.72,10746.71,10678.94,10729.01,10642.39,10642.97,10819.34,10713.58,10893.65,10899.53,10981.83,10734.89,10690.86,10982.83,10910.63,11002.10,11001.83,11197.94,11300.67,11305.51,10923.49,10746.83,10719.74,10748.04,10744.29,10723.33,10502.14,10498.23,10498.23,10576.37,10521.50,10607.10,10658.96,10615.99,10560.32,10429.16,10363.98,10360.21,10349.03,10345.40,10074.64,10166.07,10296.36,10183.45,10190.00,10192.85,10193.32,10088.13,9883.64,9879.99,9674.41,9689.66,9539.87,9536.58,9714.30,9600.68,9610.18,9654.94,9649.18,9550.02,9524.98,9521.65,9521.65,9563.73,9458.50,9455.21,9589.81,9419.34,9416.01,9468.14,9470.94,9473.23,9476.22,9475.35,9428.72,9508.32,9407.57,9468.35,9425.37,9422.03,9491.95,9488.71,9488.71,9533.61,9615.95,9510.69,9528.98,9514.46,9281.18,9138.76,9360.73,9337.11,9311.03,9405.48,9402.16,9402.16,9456.70,9637.90,9634.44,9634.44,9634.44,9634.44,9634.44,9896.84,9942.63,9785.49,9961.20,9982.97,10080.24,10076.82,10150.97,9903.17,10060.49,10068.56,10083.45,9948.97,9864.05,9870.37,9899.38,9880.01,10048.43,10154.96,10132.06,10128.52,10128.52,10128.52,10082.20,10040.66,10062.26,10375.81,10372.44,10554.96,10551.46,10355.72,10352.16,10352.16,10352.16,10297.14,10355.71,10331.83,10275.12,10304.37,10267.14,10260.82,10116.37,10112.58,10122.47,10138.12,10173.73,10173.15,10125.62,10193.88,10153.07,10148.48,10273.88,10295.37,10239.61,10154.20,10178.87,10292.50,10303.13,10640.23,10624.57,10723.98,10686.56,10614.79,10685.79,10653.55,10667.40,10651.18,10632.93,10812.96,10765.32,10834.37,10985.52,11096.55,10859.70,10883.70,10950.91,10974.20,10947.34,10884.78,10766.19,10679.40,10712.20,10769.06,10780.70,10754.67,10717.88,10545.40,10695.79,10691.84,10697.30,10926.64,10927.21,10844.71,10694.15,10714.14,10681.13,10690.21,10751.00,10637.41,10654.40,10642.85,10573.95,10514.30,10455.76,10677.04,10673.31,10606.30,10602.52,10602.52,10611.15,10663.64,10603.70,10531.15,10688.03,10724.43,10645.18,10655.77,10705.57,10658.98,10691.66,10806.09,11042.56,11117.70,11112.37,11194.89,11232.25,11129.11,11172.30,11199.39,11137.37,11133.17,11104.70,11110.41,11237.86,11178.52,11157.97,11121.99,11137.13,11211.18,11144.17,11138.65,11133.18,11030.38,10908.28,10871.06,10953.38,10995.28,10949.46,10992.17,11114.95,11075.47,11064.95,11205.16,11175.05,11246.75,11403.82,11155.70,11151.60,11151.60,11148.85,11092.91,10933.61,11000.02,10915.90,11126.58,11055.44,10963.09,10802.49,10880.91,10857.11,10853.41,10647.68,10668.84,10641.36,10689.13,10785.66,10808.10,10761.12,10757.70,10734.95,10780.71,10825.43,10800.42,10916.76,10990.15,11016.50,11011.15,10979.80,10983.74,11053.11,11036.66,11066.83,10997.36,10999.93,10978.08,10853.66,10822.23,10885.28,10677.42,10708.70,10708.34,10830.19,10933.72,10921.04,11140.16,11233.39,11315.46,11323.12,11375.72,11432.42,11272.13,11367.23,11288.01,10859.62,10954.56,10746.86,10736.88,10839.80,10948.83,11072.51,11157.36,11121.09,11050.91,10959.96,11067.53,11102.68,10981.81,10937.20,10933.46,10933.46,10933.46,10987.58,11125.44,11121.75,11051.87,11047.93,11047.93,10846.33,10592.23,10711.54,10835.04,10831.39,10881.38,10755.06,10687.53,10683.64,10752.73,10854.46,11118.76,11170.31,11091.90,10971.70,11015.50,10932.92,10644.04,10555.47,10532.58,10655.37,10741.72,10687.08,10870.01,10811.44,10838.06,10843.36,10869.93,10617.42,10917.51,10781.16,10862.00,11026.32,11031.89,10962.62,10948.33,10826.08,10865.75,10835.97,10970.21,10971.91,11095.55,10978.55,10880.01,10982.90,11029.05,10862.65,10848.42,10829.50,10831.92,10903.98,10892.33,10888.44,10888.44,10916.24,10920.95,10876.37,10954.15,10901.98,10976.17,11048.20,11087.63,11143.80,11288.96,11282.00,11133.49,11117.03,11088.45,11079.94,11111.65,11129.25,11385.79,11481.60,11397.68,11394.32,11369.21,11277.34,11212.41,10950.54,11014.53,11021.07,11023.60,11000.24,10841.06,10945.52,11001.78,11004.89,10715.21,10690.93,10347.07,10456.49,10452.95,10252.29,10079.45,9398.82,8819.69,8916.11,8838.36,8834.68,8749.94,8746.90,8691.02,8859.31,8922.47,8857.91,8861.82,8771.28,8703.33,8738.71,8804.95,8802.08,8780.40,8585.68,8546.71,8802.87,8799.76,8901.87,8970.12,9043.95,9040.86,9040.86,8751.30,8637.99,8635.03,8685.96,8767.86,8611.83,8515.69,8500.27,8478.11,8453.47,8435.60,8333.95,8330.72,8330.72,8477.90,8552.11,8519.38,8609.15,8668.85,8497.07,8516.78,8472.83,8614.67,8750.69,8752.39,8773.03,8728.70,8644.87,8654.48,8722.80,8719.29,8716.64,8716.64,8716.64,8519.19,8516.01,8470.00,8466.98,8466.98,8330.62,8327.78,8327.78,8327.78,8344.03,8450.74,8373.93,8268.76,8382.24,8409.79,8512.30,8516.71,8471.06,8481.52,8538.98,8467.40,8410.16,8378.85,8410.37,8515.25,8540.61,8534.02,8605.95,8664.07,8694.21,8614.02,8624.43,8651.43,8736.67,8710.82,8641.75,8575.49,8674.34,8564.33,8510.62,8472.20,8446.84,8437.52,8477.47,8480.99,8365.46,8432.94,8450.35,8464.66,8387.19,8304.79,8258.51,8249.78,8273.36,8261.67,8135.60,7876.94,7874.34,7887.35,8061.06,8071.62,7921.36,7900.49,7815.74,7802.05,7934.24,7931.37,7986.25,8066.78,8063.90,8063.90,8063.90,7964.14,8000.75,8047.87,7986.26,8030.50,7950.17,7846.66,7843.99,7861.09,7856.61,7880.68,7835.98,7724.20,7626.66,7623.89,7557.85,7523.12,7520.38,7520.38,7557.62,7620.69,7565.49,7562.89,7562.89,7562.89,7474.56,7635.17,7632.47,7632.47,7635.86,7689.81,7683.14,7715.00,7712.27,7683.98,7625.16,7569.61,7583.22,7642.59,7547.36,7556.57,7560.59,7606.68,7497.08,7493.36,7536.59,7533.69,7567.67,7600.03,7580.24,7614.97,7617.26,7613.72,7559.76,7538.33,7531.38,7532.00,7506.09,7508.55,7497.78,7592.32,7603.52,7870.52,8084.29,8392.05,8318.88,8357.06,8429.97,8403.70,8431.77,8502.78,8363.54,8385.79,8354.05,8406.14,8339.97,8334.24,8561.91,8468.67,8478.57,8508.12,8436.88,8398.87,8390.22,8289.56,8327.62,8330.69,8305.39,8383.43,8236.02,8268.55,8280.77,8539.52,8560.73,8556.56,8871.79,8847.96,8743.06,8743.79,8725.82,8745.11,8747.37,8691.06,8700.54,8698.22,8771.00,8750.03,8763.68,8866.58,8822.37,8809.81,8680.74,8589.95,8640.99,8661.43,8706.88,8595.48,8671.89,8585.75,8618.42,8581.91,8574.69,8610.89,8600.61,8663.73,8725.44,8570.35,8557.22,8539.77,8497.25,8494.00,8531.24,8554.22,8376.66,8343.65,8354.95,8395.85,8314.37,8348.16,8509.75,8275.80,8262.87,8264.12],
+                    borderColor: '#2f81f7',
+                    backgroundColor: 'rgba(47, 129, 247, 0.08)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#8b949e' } },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { ticks: { color: '#8b949e', maxTicksLimit: 12 }, grid: { color: '#232936' } },
+                    y: { ticks: { color: '#8b949e' }, grid: { color: '#232936' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

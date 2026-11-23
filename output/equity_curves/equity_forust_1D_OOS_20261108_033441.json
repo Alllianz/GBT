@@ -1,0 +1,3402 @@
+[
+  {
+    "timestamp": 1707350400000,
+    "candle_idx": 0,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1707436800000,
+    "candle_idx": 1,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1707523200000,
+    "candle_idx": 2,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1707609600000,
+    "candle_idx": 3,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1707696000000,
+    "candle_idx": 4,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1707782400000,
+    "candle_idx": 5,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1707868800000,
+    "candle_idx": 6,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1707955200000,
+    "candle_idx": 7,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708041600000,
+    "candle_idx": 8,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708128000000,
+    "candle_idx": 9,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708214400000,
+    "candle_idx": 10,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708300800000,
+    "candle_idx": 11,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708387200000,
+    "candle_idx": 12,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708473600000,
+    "candle_idx": 13,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708560000000,
+    "candle_idx": 14,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708646400000,
+    "candle_idx": 15,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708732800000,
+    "candle_idx": 16,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708819200000,
+    "candle_idx": 17,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708905600000,
+    "candle_idx": 18,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1708992000000,
+    "candle_idx": 19,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709078400000,
+    "candle_idx": 20,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709164800000,
+    "candle_idx": 21,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709251200000,
+    "candle_idx": 22,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709337600000,
+    "candle_idx": 23,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709424000000,
+    "candle_idx": 24,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709510400000,
+    "candle_idx": 25,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709596800000,
+    "candle_idx": 26,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709683200000,
+    "candle_idx": 27,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709769600000,
+    "candle_idx": 28,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709856000000,
+    "candle_idx": 29,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1709942400000,
+    "candle_idx": 30,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710028800000,
+    "candle_idx": 31,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710115200000,
+    "candle_idx": 32,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710201600000,
+    "candle_idx": 33,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710288000000,
+    "candle_idx": 34,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710374400000,
+    "candle_idx": 35,
+    "balance": 10000.0,
+    "equity": 10000.0,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710460800000,
+    "candle_idx": 36,
+    "balance": 9995.0,
+    "equity": 10259.619421439791,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710547200000,
+    "candle_idx": 37,
+    "balance": 9995.0,
+    "equity": 10847.836587852406,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710633600000,
+    "candle_idx": 38,
+    "balance": 9995.0,
+    "equity": 10414.597209315618,
+    "drawdown_nominal": 433.2393785367876,
+    "drawdown_pct": 3.9937859962044095
+  },
+  {
+    "timestamp": 1710720000000,
+    "candle_idx": 39,
+    "balance": 9995.0,
+    "equity": 10524.346702724539,
+    "drawdown_nominal": 323.4898851278667,
+    "drawdown_pct": 2.982068198650008
+  },
+  {
+    "timestamp": 1710806400000,
+    "candle_idx": 40,
+    "balance": 9995.0,
+    "equity": 11318.950180518159,
+    "drawdown_nominal": 0.0,
+    "drawdown_pct": 0.0
+  },
+  {
+    "timestamp": 1710892800000,
+    "candle_idx": 41,
+    "balance": 9995.0,
+    "equity": 10492.055986543575,
+    "drawdown_nominal": 826.8941939745837,
+    "drawdown_pct": 7.30539653224916
+  },
+  {
+    "timestamp": 1710979200000,
+    "candle_idx": 42,
+    "balance": 10482.304514536847,
+    "equity": 10137.489889764716,
+    "drawdown_nominal": 1181.4602907534427,
+    "drawdown_pct": 10.437896376529133
+  },
+  {
+    "timestamp": 1711065600000,
+    "candle_idx": 43,
+    "balance": 10127.663770385601,
+    "equity": 10387.90906635539,
+    "drawdown_nominal": 931.0411141627683,
+    "drawdown_pct": 8.225507660288573
+  },
+  {
+    "timestamp": 1711152000000,
+    "candle_idx": 44,
+    "balance": 10127.663770385601,
+    "equity": 10358.387505860694,
+    "drawdown_nominal": 960.5626746574653,
+    "drawdown_pct": 8.486323018814565
+  },
+  {
+    "timestamp": 1711238400000,
+    "candle_idx": 45,
+    "balance": 10127.663770385601,
+    "equity": 9866.797112512655,
+    "drawdown_nominal": 1452.1530680055039,
+    "drawdown_pct": 12.829397115864213
+  },
+  {
+    "timestamp": 1711324800000,
+    "candle_idx": 46,
+    "balance": 10127.663770385601,
+    "equity": 9459.168437164633,
+    "drawdown_nominal": 1859.7817433535256,
+    "drawdown_pct": 16.430691130300463
+  },
+  {
+    "timestamp": 1711411200000,
+    "candle_idx": 47,
+    "balance": 10127.663770385601,
+    "equity": 9442.681736446722,
+    "drawdown_nominal": 1876.2684440714365,
+    "drawdown_pct": 16.57634687093874
+  },
+  {
+    "timestamp": 1711497600000,
+    "candle_idx": 48,
+    "balance": 9432.34077288082,
+    "equity": 9358.328074416411,
+    "drawdown_nominal": 1960.6221061017477,
+    "drawdown_pct": 17.321589677780473
+  },
+  {
+    "timestamp": 1711584000000,
+    "candle_idx": 49,
+    "balance": 9348.365080765643,
+    "equity": 9159.706639905064,
+    "drawdown_nominal": 2159.2435406130953,
+    "drawdown_pct": 19.076358727415563
+  },
+  {
+    "timestamp": 1711670400000,
+    "candle_idx": 50,
+    "balance": 9348.365080765643,
+    "equity": 9293.586031567567,
+    "drawdown_nominal": 2025.3641489505917,
+    "drawdown_pct": 17.893568896845117
+  },
+  {
+    "timestamp": 1711756800000,
+    "candle_idx": 51,
+    "balance": 9348.365080765643,
+    "equity": 9332.215661426446,
+    "drawdown_nominal": 1986.734519091713,
+    "drawdown_pct": 17.552286099034355
+  },
+  {
+    "timestamp": 1711843200000,
+    "candle_idx": 52,
+    "balance": 9322.209026906992,
+    "equity": 9566.214064404385,
+    "drawdown_nominal": 1752.7361161137742,
+    "drawdown_pct": 15.484970674493573
+  },
+  {
+    "timestamp": 1711929600000,
+    "candle_idx": 53,
+    "balance": 9322.209026906992,
+    "equity": 9331.928470839253,
+    "drawdown_nominal": 1987.0217096789056,
+    "drawdown_pct": 17.55482335366144
+  },
+  {
+    "timestamp": 1712016000000,
+    "candle_idx": 54,
+    "balance": 9321.925047548488,
+    "equity": 9922.905868601696,
+    "drawdown_nominal": 1396.044311916463,
+    "drawdown_pct": 12.333690754459656
+  },
+  {
+    "timestamp": 1712102400000,
+    "candle_idx": 55,
+    "balance": 9321.925047548488,
+    "equity": 9851.220102337582,
+    "drawdown_nominal": 1467.730078180577,
+    "drawdown_pct": 12.967015975622814
+  },
+  {
+    "timestamp": 1712188800000,
+    "candle_idx": 56,
+    "balance": 9321.925047548488,
+    "equity": 9488.762545023355,
+    "drawdown_nominal": 1830.1876354948035,
+    "drawdown_pct": 16.169234834559727
+  },
+  {
+    "timestamp": 1712275200000,
+    "candle_idx": 57,
+    "balance": 9478.844527300118,
+    "equity": 9381.42863717078,
+    "drawdown_nominal": 1937.5215433473786,
+    "drawdown_pct": 17.117502175088493
+  },
+  {
+    "timestamp": 1712361600000,
+    "candle_idx": 58,
+    "balance": 9371.478804499853,
+    "equity": 9212.91790643683,
+    "drawdown_nominal": 2106.032274081328,
+    "drawdown_pct": 18.60625093753101
+  },
+  {
+    "timestamp": 1712448000000,
+    "candle_idx": 59,
+    "balance": 9202.838625987799,
+    "equity": 9270.24311971748,
+    "drawdown_nominal": 2048.7070608006798,
+    "drawdown_pct": 18.09979749117417
+  },
+  {
+    "timestamp": 1712534400000,
+    "candle_idx": 60,
+    "balance": 9202.838625987799,
+    "equity": 9598.217167557701,
+    "drawdown_nominal": 1720.733012960458,
+    "drawdown_pct": 15.202231527815474
+  },
+  {
+    "timestamp": 1712620800000,
+    "candle_idx": 61,
+    "balance": 9202.838625987799,
+    "equity": 9239.125202857284,
+    "drawdown_nominal": 2079.8249776608754,
+    "drawdown_pct": 18.374716245686887
+  },
+  {
+    "timestamp": 1712707200000,
+    "candle_idx": 62,
+    "balance": 9229.107059568849,
+    "equity": 9014.332524527053,
+    "drawdown_nominal": 2304.6176559911055,
+    "drawdown_pct": 20.36070147174731
+  },
+  {
+    "timestamp": 1712793600000,
+    "candle_idx": 63,
+    "balance": 9004.225137259533,
+    "equity": 8915.758416943207,
+    "drawdown_nominal": 2403.1917635749523,
+    "drawdown_pct": 21.231578240456034
+  },
+  {
+    "timestamp": 1712880000000,
+    "candle_idx": 64,
+    "balance": 9004.225137259533,
+    "equity": 8506.631160217132,
+    "drawdown_nominal": 2812.319020301027,
+    "drawdown_pct": 24.84611183413023
+  },
+  {
+    "timestamp": 1712966400000,
+    "candle_idx": 65,
+    "balance": 8496.879957205652,
+    "equity": 8972.472255495253,
+    "drawdown_nominal": 2346.4779250229058,
+    "drawdown_pct": 20.730526131845636
+  },
+  {
+    "timestamp": 1713052800000,
+    "candle_idx": 66,
+    "balance": 8496.879957205652,
+    "equity": 8713.619442506739,
+    "drawdown_nominal": 2605.33073801142,
+    "drawdown_pct": 23.017423846388493
+  },
+  {
+    "timestamp": 1713139200000,
+    "candle_idx": 67,
+    "balance": 8496.879957205652,
+    "equity": 9047.643018222523,
+    "drawdown_nominal": 2271.307162295636,
+    "drawdown_pct": 20.066411867462254
+  },
+  {
+    "timestamp": 1713225600000,
+    "candle_idx": 68,
+    "balance": 8496.879957205652,
+    "equity": 8992.008429301644,
+    "drawdown_nominal": 2326.9417512165146,
+    "drawdown_pct": 20.55792908446207
+  },
+  {
+    "timestamp": 1713312000000,
+    "candle_idx": 69,
+    "balance": 8496.879957205652,
+    "equity": 9366.88185837693,
+    "drawdown_nominal": 1952.0683221412291,
+    "drawdown_pct": 17.24601920680834
+  },
+  {
+    "timestamp": 1713398400000,
+    "candle_idx": 70,
+    "balance": 8496.879957205652,
+    "equity": 9040.179878000115,
+    "drawdown_nominal": 2278.7703025180435,
+    "drawdown_pct": 20.13234678283323
+  },
+  {
+    "timestamp": 1713484800000,
+    "candle_idx": 71,
+    "balance": 9030.4500372694,
+    "equity": 9085.266408256113,
+    "drawdown_nominal": 2233.6837722620457,
+    "drawdown_pct": 19.73401893849304
+  },
+  {
+    "timestamp": 1713571200000,
+    "candle_idx": 72,
+    "balance": 9080.23900007062,
+    "equity": 9080.23900007062,
+    "drawdown_nominal": 2238.711180447539,
+    "drawdown_pct": 19.778434790717096
+  },
+  {
+    "timestamp": 1713657600000,
+    "candle_idx": 73,
+    "balance": 9075.23900007062,
+    "equity": 9075.326772615923,
+    "drawdown_nominal": 2243.623407902236,
+    "drawdown_pct": 19.82183305094755
+  },
+  {
+    "timestamp": 1713744000000,
+    "candle_idx": 74,
+    "balance": 9075.23900007062,
+    "equity": 9364.540389125046,
+    "drawdown_nominal": 1954.4097913931128,
+    "drawdown_pct": 17.266705482607257
+  },
+  {
+    "timestamp": 1713830400000,
+    "candle_idx": 75,
+    "balance": 9075.23900007062,
+    "equity": 9302.126410069113,
+    "drawdown_nominal": 2016.8237704490457,
+    "drawdown_pct": 17.818116859639005
+  },
+  {
+    "timestamp": 1713916800000,
+    "candle_idx": 76,
+    "balance": 9075.23900007062,
+    "equity": 8974.995053989447,
+    "drawdown_nominal": 2343.955126528712,
+    "drawdown_pct": 20.70823785904684
+  },
+  {
+    "timestamp": 1714003200000,
+    "candle_idx": 77,
+    "balance": 8965.043636863207,
+    "equity": 8932.571811724516,
+    "drawdown_nominal": 2386.378368793643,
+    "drawdown_pct": 21.083036242186193
+  },
+  {
+    "timestamp": 1714089600000,
+    "candle_idx": 78,
+    "balance": 8922.557132051697,
+    "equity": 8809.636378909718,
+    "drawdown_nominal": 2509.3138016084413,
+    "drawdown_pct": 22.169139024283343
+  },
+  {
+    "timestamp": 1714176000000,
+    "candle_idx": 79,
+    "balance": 8799.691289633762,
+    "equity": 8847.992998901442,
+    "drawdown_nominal": 2470.957181616717,
+    "drawdown_pct": 21.830268198102466
+  },
+  {
+    "timestamp": 1714262400000,
+    "candle_idx": 80,
+    "balance": 8799.691289633762,
+    "equity": 8901.836498979848,
+    "drawdown_nominal": 2417.1136815383106,
+    "drawdown_pct": 21.35457478820408
+  },
+  {
+    "timestamp": 1714348800000,
+    "candle_idx": 81,
+    "balance": 8799.691289633762,
+    "equity": 8784.637188959463,
+    "drawdown_nominal": 2534.312991558696,
+    "drawdown_pct": 22.390000407640986
+  },
+  {
+    "timestamp": 1714435200000,
+    "candle_idx": 82,
+    "balance": 8774.629661909126,
+    "equity": 8274.520057424737,
+    "drawdown_nominal": 3044.4301230934216,
+    "drawdown_pct": 26.89675344921479
+  },
+  {
+    "timestamp": 1714521600000,
+    "candle_idx": 83,
+    "balance": 8264.77167722244,
+    "equity": 8645.019504845095,
+    "drawdown_nominal": 2673.930675673064,
+    "drawdown_pct": 23.623486569234608
+  },
+  {
+    "timestamp": 1714608000000,
+    "candle_idx": 84,
+    "balance": 8264.77167722244,
+    "equity": 8530.363669312366,
+    "drawdown_nominal": 2788.5865112057927,
+    "drawdown_pct": 24.636441248813206
+  },
+  {
+    "timestamp": 1714694400000,
+    "candle_idx": 85,
+    "balance": 8264.77167722244,
+    "equity": 7900.518045275847,
+    "drawdown_nominal": 3418.432135242312,
+    "drawdown_pct": 30.200964583500124
+  },
+  {
+    "timestamp": 1714780800000,
+    "candle_idx": 86,
+    "balance": 7890.335918459873,
+    "equity": 8050.958964701556,
+    "drawdown_nominal": 3267.9912158166026,
+    "drawdown_pct": 28.871857934681717
+  },
+  {
+    "timestamp": 1714867200000,
+    "candle_idx": 87,
+    "balance": 7890.335918459873,
+    "equity": 8070.03596303542,
+    "drawdown_nominal": 3248.9142174827393,
+    "drawdown_pct": 28.703317583945854
+  },
+  {
+    "timestamp": 1714953600000,
+    "candle_idx": 88,
+    "balance": 7890.335918459873,
+    "equity": 7935.369466210653,
+    "drawdown_nominal": 3383.5807143075062,
+    "drawdown_pct": 29.893061285234957
+  },
+  {
+    "timestamp": 1715040000000,
+    "candle_idx": 89,
+    "balance": 7925.345359951963,
+    "equity": 8060.403947610543,
+    "drawdown_nominal": 3258.5462329076163,
+    "drawdown_pct": 28.788413951287893
+  },
+  {
+    "timestamp": 1715126400000,
+    "candle_idx": 90,
+    "balance": 7925.345359951963,
+    "equity": 8237.566428585029,
+    "drawdown_nominal": 3081.38375193313,
+    "drawdown_pct": 27.223229211104016
+  },
+  {
+    "timestamp": 1715212800000,
+    "candle_idx": 91,
+    "balance": 7925.345359951963,
+    "equity": 7939.778945037922,
+    "drawdown_nominal": 3379.1712354802366,
+    "drawdown_pct": 29.854104679216327
+  },
+  {
+    "timestamp": 1715299200000,
+    "candle_idx": 92,
+    "balance": 7929.787745772758,
+    "equity": 7569.257257774533,
+    "drawdown_nominal": 3749.692922743626,
+    "drawdown_pct": 33.127568042462855
+  },
+  {
+    "timestamp": 1715385600000,
+    "candle_idx": 93,
+    "balance": 7559.437523018532,
+    "equity": 7555.161206525717,
+    "drawdown_nominal": 3763.788973992442,
+    "drawdown_pct": 33.25210301279145
+  },
+  {
+    "timestamp": 1715472000000,
+    "candle_idx": 94,
+    "balance": 7559.437523018532,
+    "equity": 7446.93750451524,
+    "drawdown_nominal": 3872.012676002919,
+    "drawdown_pct": 34.208231454780254
+  },
+  {
+    "timestamp": 1715558400000,
+    "candle_idx": 95,
+    "balance": 7436.879608946507,
+    "equity": 7673.702196936879,
+    "drawdown_nominal": 3645.24798358128,
+    "drawdown_pct": 32.20482399379558
+  },
+  {
+    "timestamp": 1715644800000,
+    "candle_idx": 96,
+    "balance": 7436.879608946507,
+    "equity": 7452.085190886523,
+    "drawdown_nominal": 3866.8649896316356,
+    "drawdown_pct": 34.162752975864926
+  },
+  {
+    "timestamp": 1715731200000,
+    "candle_idx": 97,
+    "balance": 7442.077588095553,
+    "equity": 6690.340224328371,
+    "drawdown_nominal": 4628.609956189788,
+    "drawdown_pct": 40.892572918612316
+  },
+  {
+    "timestamp": 1715817600000,
+    "candle_idx": 98,
+    "balance": 6679.962730864446,
+    "equity": 6533.2551034725175,
+    "drawdown_nominal": 4785.6950770456415,
+    "drawdown_pct": 42.280379370187866
+  },
+  {
+    "timestamp": 1715904000000,
+    "candle_idx": 99,
+    "balance": 6523.328457286214,
+    "equity": 6249.122242574864,
+    "drawdown_nominal": 5069.827937943295,
+    "drawdown_pct": 44.790619775580716
+  },
+  {
+    "timestamp": 1715990400000,
+    "candle_idx": 100,
+    "balance": 6238.985139467508,
+    "equity": 6222.752148300165,
+    "drawdown_nominal": 5096.198032217994,
+    "drawdown_pct": 45.023592744399735
+  },
+  {
+    "timestamp": 1716076800000,
+    "candle_idx": 101,
+    "balance": 6238.985139467508,
+    "equity": 6127.086416621959,
+    "drawdown_nominal": 5191.8637638962,
+    "drawdown_pct": 45.868774763513684
+  },
+  {
+    "timestamp": 1716163200000,
+    "candle_idx": 102,
+    "balance": 6238.985139467508,
+    "equity": 6898.841310391355,
+    "drawdown_nominal": 4420.108870126804,
+    "drawdown_pct": 39.050519700445044
+  },
+  {
+    "timestamp": 1716249600000,
+    "candle_idx": 103,
+    "balance": 6238.985139467508,
+    "equity": 6705.137562480159,
+    "drawdown_nominal": 4613.8126180379995,
+    "drawdown_pct": 40.76184225971024
+  },
+  {
+    "timestamp": 1716336000000,
+    "candle_idx": 104,
+    "balance": 6694.904486268653,
+    "equity": 6834.853628329606,
+    "drawdown_nominal": 4484.096552188553,
+    "drawdown_pct": 39.61583433688441
+  },
+  {
+    "timestamp": 1716422400000,
+    "candle_idx": 105,
+    "balance": 6694.904486268653,
+    "equity": 7005.487744546754,
+    "drawdown_nominal": 4313.462435971405,
+    "drawdown_pct": 38.10832601238592
+  },
+  {
+    "timestamp": 1716508800000,
+    "candle_idx": 106,
+    "balance": 6694.904486268653,
+    "equity": 6922.757347790393,
+    "drawdown_nominal": 4396.192832727766,
+    "drawdown_pct": 38.839227689988086
+  },
+  {
+    "timestamp": 1716595200000,
+    "candle_idx": 107,
+    "balance": 6912.871274221154,
+    "equity": 7020.906300922106,
+    "drawdown_nominal": 4298.043879596053,
+    "drawdown_pct": 37.972107051003
+  },
+  {
+    "timestamp": 1716681600000,
+    "candle_idx": 108,
+    "balance": 6912.871274221154,
+    "equity": 6906.6976774051645,
+    "drawdown_nominal": 4412.252503112994,
+    "drawdown_pct": 38.981110727982816
+  },
+  {
+    "timestamp": 1716768000000,
+    "candle_idx": 109,
+    "balance": 6896.700764203573,
+    "equity": 6761.1305426502795,
+    "drawdown_nominal": 4557.8196378678795,
+    "drawdown_pct": 40.26715874863257
+  },
+  {
+    "timestamp": 1716854400000,
+    "candle_idx": 110,
+    "balance": 6751.062757539503,
+    "equity": 6601.567744619053,
+    "drawdown_nominal": 4717.382435899106,
+    "drawdown_pct": 41.676854837814595
+  },
+  {
+    "timestamp": 1716940800000,
+    "candle_idx": 111,
+    "balance": 6591.643931571636,
+    "equity": 6700.707886284026,
+    "drawdown_nominal": 4618.242294234133,
+    "drawdown_pct": 40.80097730426373
+  },
+  {
+    "timestamp": 1717027200000,
+    "candle_idx": 112,
+    "balance": 6591.643931571636,
+    "equity": 6598.402861605086,
+    "drawdown_nominal": 4720.547318913073,
+    "drawdown_pct": 41.704815761429344
+  },
+  {
+    "timestamp": 1717113600000,
+    "candle_idx": 113,
+    "balance": 6588.4062410701035,
+    "equity": 6469.586311871074,
+    "drawdown_nominal": 4849.363868647085,
+    "drawdown_pct": 42.84287669181251
+  },
+  {
+    "timestamp": 1717200000000,
+    "candle_idx": 114,
+    "balance": 6459.645721835674,
+    "equity": 6426.059703711007,
+    "drawdown_nominal": 4892.890476807152,
+    "drawdown_pct": 43.227423027522896
+  },
+  {
+    "timestamp": 1717286400000,
+    "candle_idx": 115,
+    "balance": 6416.044392046116,
+    "equity": 6415.865838641532,
+    "drawdown_nominal": 4903.084341876627,
+    "drawdown_pct": 43.31748319129163
+  },
+  {
+    "timestamp": 1717372800000,
+    "candle_idx": 116,
+    "balance": 6416.044392046116,
+    "equity": 6569.963329390693,
+    "drawdown_nominal": 4748.986851127466,
+    "drawdown_pct": 41.95607167969766
+  },
+  {
+    "timestamp": 1717459200000,
+    "candle_idx": 117,
+    "balance": 6416.044392046116,
+    "equity": 6824.9464450266,
+    "drawdown_nominal": 4494.003735491559,
+    "drawdown_pct": 39.703361741325665
+  },
+  {
+    "timestamp": 1717545600000,
+    "candle_idx": 118,
+    "balance": 6416.044392046116,
+    "equity": 6909.08198978566,
+    "drawdown_nominal": 4409.868190732499,
+    "drawdown_pct": 38.96004594421339
+  },
+  {
+    "timestamp": 1717632000000,
+    "candle_idx": 119,
+    "balance": 6416.044392046116,
+    "equity": 6863.493321345461,
+    "drawdown_nominal": 4455.456859172698,
+    "drawdown_pct": 39.36281004965724
+  },
+  {
+    "timestamp": 1717718400000,
+    "candle_idx": 120,
+    "balance": 6416.044392046116,
+    "equity": 6650.489439210777,
+    "drawdown_nominal": 4668.460741307382,
+    "drawdown_pct": 41.24464430758427
+  },
+  {
+    "timestamp": 1717804800000,
+    "candle_idx": 121,
+    "balance": 6640.372216687195,
+    "equity": 6646.880703384736,
+    "drawdown_nominal": 4672.069477133423,
+    "drawdown_pct": 41.276526556101025
+  },
+  {
+    "timestamp": 1717891200000,
+    "candle_idx": 122,
+    "balance": 6636.883957628085,
+    "equity": 6685.603876670607,
+    "drawdown_nominal": 4633.346303847552,
+    "drawdown_pct": 40.934417326284645
+  },
+  {
+    "timestamp": 1717977600000,
+    "candle_idx": 123,
+    "balance": 6636.883957628085,
+    "equity": 6670.001614039541,
+    "drawdown_nominal": 4648.948566478618,
+    "drawdown_pct": 41.07225928496664
+  },
+  {
+    "timestamp": 1718064000000,
+    "candle_idx": 124,
+    "balance": 6664.985055211335,
+    "equity": 6664.985055211335,
+    "drawdown_nominal": 4653.965125306824,
+    "drawdown_pct": 41.11657928592257
+  },
+  {
+    "timestamp": 1718150400000,
+    "candle_idx": 125,
+    "balance": 6659.985055211335,
+    "equity": 6518.891559824103,
+    "drawdown_nominal": 4800.058620694056,
+    "drawdown_pct": 42.4072775667462
+  },
+  {
+    "timestamp": 1718236800000,
+    "candle_idx": 126,
+    "balance": 6508.822499389185,
+    "equity": 6290.4100950728825,
+    "drawdown_nominal": 5028.540085445276,
+    "drawdown_pct": 44.42585226764449
+  },
+  {
+    "timestamp": 1718323200000,
+    "candle_idx": 127,
+    "balance": 6280.519301275041,
+    "equity": 6389.698144643041,
+    "drawdown_nominal": 4929.252035875118,
+    "drawdown_pct": 43.54866800597109
+  },
+  {
+    "timestamp": 1718409600000,
+    "candle_idx": 128,
+    "balance": 6280.519301275041,
+    "equity": 6362.103162778363,
+    "drawdown_nominal": 4956.847017739796,
+    "drawdown_pct": 43.79246254013357
+  },
+  {
+    "timestamp": 1718496000000,
+    "candle_idx": 129,
+    "balance": 6280.519301275041,
+    "equity": 6294.9173342527365,
+    "drawdown_nominal": 5024.032846265422,
+    "drawdown_pct": 44.38603197417229
+  },
+  {
+    "timestamp": 1718582400000,
+    "candle_idx": 130,
+    "balance": 6284.926031629116,
+    "equity": 6259.050487999737,
+    "drawdown_nominal": 5059.899692518422,
+    "drawdown_pct": 44.702906292735264
+  },
+  {
+    "timestamp": 1718668800000,
+    "candle_idx": 131,
+    "balance": 6249.063425771551,
+    "equity": 6448.901541575439,
+    "drawdown_nominal": 4870.04863894272,
+    "drawdown_pct": 43.02562129237836
+  },
+  {
+    "timestamp": 1718755200000,
+    "candle_idx": 132,
+    "balance": 6249.063425771551,
+    "equity": 6479.117619235345,
+    "drawdown_nominal": 4839.832561282814,
+    "drawdown_pct": 42.75867005416271
+  },
+  {
+    "timestamp": 1718841600000,
+    "candle_idx": 133,
+    "balance": 6249.063425771551,
+    "equity": 6494.8128378775,
+    "drawdown_nominal": 4824.137342640659,
+    "drawdown_pct": 42.6200068531428
+  },
+  {
+    "timestamp": 1718928000000,
+    "candle_idx": 134,
+    "balance": 6484.935712583553,
+    "equity": 6372.953268929716,
+    "drawdown_nominal": 4945.996911588443,
+    "drawdown_pct": 43.696604655980785
+  },
+  {
+    "timestamp": 1719014400000,
+    "candle_idx": 135,
+    "balance": 6363.009260151543,
+    "equity": 6344.542870072787,
+    "drawdown_nominal": 4974.407310445372,
+    "drawdown_pct": 43.947603188564024
+  },
+  {
+    "timestamp": 1719100800000,
+    "candle_idx": 136,
+    "balance": 6363.009260151543,
+    "equity": 6508.549981620697,
+    "drawdown_nominal": 4810.400198897462,
+    "drawdown_pct": 42.49864273788377
+  },
+  {
+    "timestamp": 1719187200000,
+    "candle_idx": 137,
+    "balance": 6363.009260151543,
+    "equity": 6963.26593439912,
+    "drawdown_nominal": 4355.684246119039,
+    "drawdown_pct": 38.48134479481951
+  },
+  {
+    "timestamp": 1719273600000,
+    "candle_idx": 138,
+    "balance": 6363.009260151543,
+    "equity": 6727.433997412772,
+    "drawdown_nominal": 4591.5161831053865,
+    "drawdown_pct": 40.56485901853485
+  },
+  {
+    "timestamp": 1719360000000,
+    "candle_idx": 139,
+    "balance": 6363.009260151543,
+    "equity": 6874.139294094155,
+    "drawdown_nominal": 4444.810886424004,
+    "drawdown_pct": 39.268755631368364
+  },
+  {
+    "timestamp": 1719446400000,
+    "candle_idx": 140,
+    "balance": 6363.009260151543,
+    "equity": 6742.952312891365,
+    "drawdown_nominal": 4575.997867626794,
+    "drawdown_pct": 40.42775871125279
+  },
+  {
+    "timestamp": 1719532800000,
+    "candle_idx": 141,
+    "balance": 6363.009260151543,
+    "equity": 6942.291108555342,
+    "drawdown_nominal": 4376.659071962817,
+    "drawdown_pct": 38.66665196120213
+  },
+  {
+    "timestamp": 1719619200000,
+    "candle_idx": 142,
+    "balance": 6363.009260151543,
+    "equity": 6855.16778705588,
+    "drawdown_nominal": 4463.782393462279,
+    "drawdown_pct": 39.43636399376692
+  },
+  {
+    "timestamp": 1719705600000,
+    "candle_idx": 143,
+    "balance": 6845.413866319332,
+    "equity": 7138.15483861033,
+    "drawdown_nominal": 4180.7953419078285,
+    "drawdown_pct": 36.93624651784128
+  },
+  {
+    "timestamp": 1719792000000,
+    "candle_idx": 144,
+    "balance": 6845.413866319332,
+    "equity": 7159.1397487579225,
+    "drawdown_nominal": 4159.8104317602365,
+    "drawdown_pct": 36.75085025924029
+  },
+  {
+    "timestamp": 1719878400000,
+    "candle_idx": 145,
+    "balance": 6845.413866319332,
+    "equity": 7033.7812278481115,
+    "drawdown_nominal": 4285.1689526700475,
+    "drawdown_pct": 37.85836039852488
+  },
+  {
+    "timestamp": 1719964800000,
+    "candle_idx": 146,
+    "balance": 7023.685405284889,
+    "equity": 7333.794962693814,
+    "drawdown_nominal": 3985.1552178243446,
+    "drawdown_pct": 35.207816575458345
+  },
+  {
+    "timestamp": 1720051200000,
+    "candle_idx": 147,
+    "balance": 7023.685405284889,
+    "equity": 7842.131104407419,
+    "drawdown_nominal": 3476.81907611074,
+    "drawdown_pct": 30.716798118741945
+  },
+  {
+    "timestamp": 1720137600000,
+    "candle_idx": 148,
+    "balance": 7023.685405284889,
+    "equity": 7909.921702561838,
+    "drawdown_nominal": 3409.028477956321,
+    "drawdown_pct": 30.117885701306818
+  },
+  {
+    "timestamp": 1720224000000,
+    "candle_idx": 149,
+    "balance": 7023.685405284889,
+    "equity": 7652.204128732016,
+    "drawdown_nominal": 3666.7460517861427,
+    "drawdown_pct": 32.394753871231245
+  },
+  {
+    "timestamp": 1720310400000,
+    "candle_idx": 150,
+    "balance": 7023.685405284889,
+    "equity": 8034.002219548436,
+    "drawdown_nominal": 3284.9479609697228,
+    "drawdown_pct": 29.021666396444413
+  },
+  {
+    "timestamp": 1720396800000,
+    "candle_idx": 151,
+    "balance": 7023.685405284889,
+    "equity": 7896.108334156744,
+    "drawdown_nominal": 3422.8418463614153,
+    "drawdown_pct": 30.239923241757076
+  },
+  {
+    "timestamp": 1720483200000,
+    "candle_idx": 152,
+    "balance": 7023.685405284889,
+    "equity": 7681.194016309898,
+    "drawdown_nominal": 3637.756164208261,
+    "drawdown_pct": 32.13863570553971
+  },
+  {
+    "timestamp": 1720569600000,
+    "candle_idx": 153,
+    "balance": 7671.522770615411,
+    "equity": 7615.682977333757,
+    "drawdown_nominal": 3703.267203184402,
+    "drawdown_pct": 32.71740880667851
+  },
+  {
+    "timestamp": 1720656000000,
+    "candle_idx": 154,
+    "balance": 7671.522770615411,
+    "equity": 7549.1954665671765,
+    "drawdown_nominal": 3769.7547139509825,
+    "drawdown_pct": 33.304808783763114
+  },
+  {
+    "timestamp": 1720742400000,
+    "candle_idx": 155,
+    "balance": 7539.256630219201,
+    "equity": 7443.475141974281,
+    "drawdown_nominal": 3875.4750385438783,
+    "drawdown_pct": 34.23882053314654
+  },
+  {
+    "timestamp": 1720828800000,
+    "candle_idx": 156,
+    "balance": 7433.428996088755,
+    "equity": 7660.575423852605,
+    "drawdown_nominal": 3658.374756665554,
+    "drawdown_pct": 32.32079564200433
+  },
+  {
+    "timestamp": 1720915200000,
+    "candle_idx": 157,
+    "balance": 7433.428996088755,
+    "equity": 7935.910551767038,
+    "drawdown_nominal": 3383.039628751121,
+    "drawdown_pct": 29.888280934162147
+  },
+  {
+    "timestamp": 1721001600000,
+    "candle_idx": 158,
+    "balance": 7433.428996088755,
+    "equity": 8614.14370416242,
+    "drawdown_nominal": 2704.8064763557395,
+    "drawdown_pct": 23.896266289882362
+  },
+  {
+    "timestamp": 1721088000000,
+    "candle_idx": 159,
+    "balance": 7433.428996088755,
+    "equity": 8669.395911443618,
+    "drawdown_nominal": 2649.5542690745406,
+    "drawdown_pct": 23.408127315860746
+  },
+  {
+    "timestamp": 1721174400000,
+    "candle_idx": 160,
+    "balance": 7433.428996088755,
+    "equity": 8504.252531231561,
+    "drawdown_nominal": 2814.697649286598,
+    "drawdown_pct": 24.8671264065741
+  },
+  {
+    "timestamp": 1721260800000,
+    "candle_idx": 161,
+    "balance": 8493.717119463989,
+    "equity": 8509.33158950744,
+    "drawdown_nominal": 2809.6185910107197,
+    "drawdown_pct": 24.822254239148005
+  },
+  {
+    "timestamp": 1721347200000,
+    "candle_idx": 162,
+    "balance": 8499.339396742462,
+    "equity": 8916.93071710418,
+    "drawdown_nominal": 2402.019463413979,
+    "drawdown_pct": 21.221221271459108
+  },
+  {
+    "timestamp": 1721433600000,
+    "candle_idx": 163,
+    "balance": 8906.72348345758,
+    "equity": 8834.723794288613,
+    "drawdown_nominal": 2484.226386229546,
+    "drawdown_pct": 21.94749819206133
+  },
+  {
+    "timestamp": 1721520000000,
+    "candle_idx": 164,
+    "balance": 8824.686293544166,
+    "equity": 8977.407541408887,
+    "drawdown_nominal": 2341.5426391092715,
+    "drawdown_pct": 20.686924156088832
+  },
+  {
+    "timestamp": 1721606400000,
+    "candle_idx": 165,
+    "balance": 8824.686293544166,
+    "equity": 8883.0777405466,
+    "drawdown_nominal": 2435.8724399715593,
+    "drawdown_pct": 21.520303571651993
+  },
+  {
+    "timestamp": 1721692800000,
+    "candle_idx": 166,
+    "balance": 8824.686293544166,
+    "equity": 8645.365391256006,
+    "drawdown_nominal": 2673.584789262153,
+    "drawdown_pct": 23.620430752172123
+  },
+  {
+    "timestamp": 1721779200000,
+    "candle_idx": 167,
+    "balance": 8635.453563026114,
+    "equity": 8720.384405054749,
+    "drawdown_nominal": 2598.5657754634103,
+    "drawdown_pct": 22.957657150359974
+  },
+  {
+    "timestamp": 1721865600000,
+    "candle_idx": 168,
+    "balance": 8710.425353095272,
+    "equity": 8775.271769999576,
+    "drawdown_nominal": 2543.6784105185834,
+    "drawdown_pct": 22.47274146410404
+  },
+  {
+    "timestamp": 1721952000000,
+    "candle_idx": 169,
+    "balance": 8710.425353095272,
+    "equity": 9097.720325670074,
+    "drawdown_nominal": 2221.229854848085,
+    "drawdown_pct": 19.623991796263933
+  },
+  {
+    "timestamp": 1722038400000,
+    "candle_idx": 170,
+    "balance": 8710.425353095272,
+    "equity": 9095.962800241403,
+    "drawdown_nominal": 2222.987380276756,
+    "drawdown_pct": 19.6395190792773
+  },
+  {
+    "timestamp": 1722124800000,
+    "candle_idx": 171,
+    "balance": 8710.425353095272,
+    "equity": 9150.016267254763,
+    "drawdown_nominal": 2168.933913263396,
+    "drawdown_pct": 19.161970665764574
+  },
+  {
+    "timestamp": 1722211200000,
+    "candle_idx": 172,
+    "balance": 8710.425353095272,
+    "equity": 8925.89888841809,
+    "drawdown_nominal": 2393.051292100068,
+    "drawdown_pct": 21.14198979529848
+  },
+  {
+    "timestamp": 1722297600000,
+    "candle_idx": 173,
+    "balance": 8915.789622802155,
+    "equity": 9005.13346633034,
+    "drawdown_nominal": 2313.8167141878184,
+    "drawdown_pct": 20.441972773855753
+  },
+  {
+    "timestamp": 1722384000000,
+    "candle_idx": 174,
+    "balance": 8915.789622802155,
+    "equity": 9238.719971498891,
+    "drawdown_nominal": 2080.230209019268,
+    "drawdown_pct": 18.378296360025494
+  },
+  {
+    "timestamp": 1722470400000,
+    "candle_idx": 175,
+    "balance": 8915.789622802155,
+    "equity": 9130.009410933204,
+    "drawdown_nominal": 2188.940769584955,
+    "drawdown_pct": 19.338726071544116
+  },
+  {
+    "timestamp": 1722556800000,
+    "candle_idx": 176,
+    "balance": 8915.789622802155,
+    "equity": 9707.340918698159,
+    "drawdown_nominal": 1611.60926182,
+    "drawdown_pct": 14.238151384338224
+  },
+  {
+    "timestamp": 1722643200000,
+    "candle_idx": 177,
+    "balance": 8915.789622802155,
+    "equity": 9827.179779945978,
+    "drawdown_nominal": 1491.7704005721807,
+    "drawdown_pct": 13.179406011873537
+  },
+  {
+    "timestamp": 1722729600000,
+    "candle_idx": 178,
+    "balance": 8915.789622802155,
+    "equity": 10207.055823373901,
+    "drawdown_nominal": 1111.8943571442578,
+    "drawdown_pct": 9.823299329102246
+  },
+  {
+    "timestamp": 1722816000000,
+    "candle_idx": 179,
+    "balance": 8915.789622802155,
+    "equity": 10827.286391222697,
+    "drawdown_nominal": 491.66378929546227,
+    "drawdown_pct": 4.343722531279441
+  },
+  {
+    "timestamp": 1722902400000,
+    "candle_idx": 180,
+    "balance": 8915.789622802155,
+    "equity": 10527.337360996004,
+    "drawdown_nominal": 791.6128195221554,
+    "drawdown_pct": 6.993694705756863
+  },
+  {
+    "timestamp": 1722988800000,
+    "candle_idx": 181,
+    "balance": 8915.789622802155,
+    "equity": 10660.279526774142,
+    "drawdown_nominal": 658.6706537440168,
+    "drawdown_pct": 5.819185023693286
+  },
+  {
+    "timestamp": 1723075200000,
+    "candle_idx": 182,
+    "balance": 8915.789622802155,
+    "equity": 9679.241660005895,
+    "drawdown_nominal": 1639.708520512264,
+    "drawdown_pct": 14.486401073966043
+  },
+  {
+    "timestamp": 1723161600000,
+    "candle_idx": 183,
+    "balance": 9669.62188792643,
+    "equity": 9532.149852132246,
+    "drawdown_nominal": 1786.8003283859125,
+    "drawdown_pct": 15.785919187640744
+  },
+  {
+    "timestamp": 1723248000000,
+    "candle_idx": 184,
+    "balance": 9669.62188792643,
+    "equity": 9546.013613763736,
+    "drawdown_nominal": 1772.9365667544225,
+    "drawdown_pct": 15.663436436057015
+  },
+  {
+    "timestamp": 1723334400000,
+    "candle_idx": 185,
+    "balance": 9669.62188792643,
+    "equity": 9187.598414204678,
+    "drawdown_nominal": 2131.3517663134808,
+    "drawdown_pct": 18.829942108782316
+  },
+  {
+    "timestamp": 1723420800000,
+    "candle_idx": 186,
+    "balance": 9177.839425941538,
+    "equity": 9069.847255948696,
+    "drawdown_nominal": 2249.1029245694626,
+    "drawdown_pct": 19.870243164781765
+  },
+  {
+    "timestamp": 1723507200000,
+    "candle_idx": 187,
+    "balance": 9059.7932598637,
+    "equity": 9268.821100361494,
+    "drawdown_nominal": 2050.1290801566647,
+    "drawdown_pct": 18.112360664730957
+  },
+  {
+    "timestamp": 1723593600000,
+    "candle_idx": 188,
+    "balance": 9059.7932598637,
+    "equity": 8948.034616071904,
+    "drawdown_nominal": 2370.9155644462553,
+    "drawdown_pct": 20.946426361404125
+  },
+  {
+    "timestamp": 1723680000000,
+    "candle_idx": 189,
+    "balance": 8938.090495393799,
+    "equity": 9132.75034718491,
+    "drawdown_nominal": 2186.1998333332485,
+    "drawdown_pct": 19.314510608025035
+  },
+  {
+    "timestamp": 1723766400000,
+    "candle_idx": 190,
+    "balance": 8938.090495393799,
+    "equity": 8905.507169856539,
+    "drawdown_nominal": 2413.44301066162,
+    "drawdown_pct": 21.322145359519
+  },
+  {
+    "timestamp": 1723852800000,
+    "candle_idx": 191,
+    "balance": 8895.4925831055,
+    "equity": 9000.359555427516,
+    "drawdown_nominal": 2318.590625090643,
+    "drawdown_pct": 20.484149043091755
+  },
+  {
+    "timestamp": 1723939200000,
+    "candle_idx": 192,
+    "balance": 8895.4925831055,
+    "equity": 8819.52772288312,
+    "drawdown_nominal": 2499.422457635039,
+    "drawdown_pct": 22.081751556226216
+  },
+  {
+    "timestamp": 1724025600000,
+    "candle_idx": 193,
+    "balance": 8809.56570531323,
+    "equity": 8636.504630320098,
+    "drawdown_nominal": 2682.445550198061,
+    "drawdown_pct": 23.698713285398203
+  },
+  {
+    "timestamp": 1724112000000,
+    "candle_idx": 194,
+    "balance": 8626.4180997826,
+    "equity": 8554.966094769015,
+    "drawdown_nominal": 2763.9840857491436,
+    "drawdown_pct": 24.41908517723164
+  },
+  {
+    "timestamp": 1724198400000,
+    "candle_idx": 195,
+    "balance": 8626.4180997826,
+    "equity": 8915.377276074061,
+    "drawdown_nominal": 2403.5729044440977,
+    "drawdown_pct": 21.234945521547186
+  },
+  {
+    "timestamp": 1724284800000,
+    "candle_idx": 196,
+    "balance": 8626.4180997826,
+    "equity": 8784.117234182022,
+    "drawdown_nominal": 2534.832946336137,
+    "drawdown_pct": 22.39459407374207
+  },
+  {
+    "timestamp": 1724371200000,
+    "candle_idx": 197,
+    "balance": 8774.036703044796,
+    "equity": 8167.600319478724,
+    "drawdown_nominal": 3151.3498610394354,
+    "drawdown_pct": 27.841361705641614
+  },
+  {
+    "timestamp": 1724457600000,
+    "candle_idx": 198,
+    "balance": 8157.297101286941,
+    "equity": 8176.000280874319,
+    "drawdown_nominal": 3142.9498996438397,
+    "drawdown_pct": 27.767150217282442
+  },
+  {
+    "timestamp": 1724544000000,
+    "candle_idx": 199,
+    "balance": 8157.297101286941,
+    "equity": 8185.836744781883,
+    "drawdown_nominal": 3133.113435736276,
+    "drawdown_pct": 27.68024760042586
+  },
+  {
+    "timestamp": 1724630400000,
+    "candle_idx": 200,
+    "balance": 8157.297101286941,
+    "equity": 7969.400183805801,
+    "drawdown_nominal": 3349.549996712358,
+    "drawdown_pct": 29.592408688903888
+  },
+  {
+    "timestamp": 1724716800000,
+    "candle_idx": 201,
+    "balance": 7959.494132264541,
+    "equity": 8503.62629001353,
+    "drawdown_nominal": 2815.323890504629,
+    "drawdown_pct": 24.872659085913117
+  },
+  {
+    "timestamp": 1724803200000,
+    "candle_idx": 202,
+    "balance": 7959.494132264541,
+    "equity": 8564.11901688115,
+    "drawdown_nominal": 2754.831163637009,
+    "drawdown_pct": 24.338221475508767
+  },
+  {
+    "timestamp": 1724889600000,
+    "candle_idx": 203,
+    "balance": 7959.494132264541,
+    "equity": 8512.537070801001,
+    "drawdown_nominal": 2806.4131097171576,
+    "drawdown_pct": 24.793934640223725
+  },
+  {
+    "timestamp": 1724976000000,
+    "candle_idx": 204,
+    "balance": 7959.494132264541,
+    "equity": 8549.940387476687,
+    "drawdown_nominal": 2769.009793041472,
+    "drawdown_pct": 24.463486002504098
+  },
+  {
+    "timestamp": 1725062400000,
+    "candle_idx": 205,
+    "balance": 7959.494132264541,
+    "equity": 8573.812813233444,
+    "drawdown_nominal": 2745.137367284715,
+    "drawdown_pct": 24.252579289637335
+  },
+  {
+    "timestamp": 1725148800000,
+    "candle_idx": 206,
+    "balance": 7959.494132264541,
+    "equity": 8839.931475104404,
+    "drawdown_nominal": 2479.018705413755,
+    "drawdown_pct": 21.901489677731494
+  },
+  {
+    "timestamp": 1725235200000,
+    "candle_idx": 207,
+    "balance": 7959.494132264541,
+    "equity": 8548.644910505622,
+    "drawdown_nominal": 2770.305270012537,
+    "drawdown_pct": 24.474931206788987
+  },
+  {
+    "timestamp": 1725321600000,
+    "candle_idx": 208,
+    "balance": 8538.941078185539,
+    "equity": 8260.85363603058,
+    "drawdown_nominal": 3058.0965444875783,
+    "drawdown_pct": 27.017492750794887
+  },
+  {
+    "timestamp": 1725408000000,
+    "candle_idx": 209,
+    "balance": 8250.994370034367,
+    "equity": 8166.948623932675,
+    "drawdown_nominal": 3152.0015565854837,
+    "drawdown_pct": 27.8471192673912
+  },
+  {
+    "timestamp": 1725494400000,
+    "candle_idx": 210,
+    "balance": 8156.906601059624,
+    "equity": 7847.975740921175,
+    "drawdown_nominal": 3470.9744395969838,
+    "drawdown_pct": 30.66516226541152
+  },
+  {
+    "timestamp": 1725580800000,
+    "candle_idx": 211,
+    "balance": 7838.130206351245,
+    "equity": 8232.759967832199,
+    "drawdown_nominal": 3086.1902126859604,
+    "drawdown_pct": 27.265693049853855
+  },
+  {
+    "timestamp": 1725667200000,
+    "candle_idx": 212,
+    "balance": 7838.130206351245,
+    "equity": 8197.535688729315,
+    "drawdown_nominal": 3121.4144917888443,
+    "drawdown_pct": 27.57689045368651
+  },
+  {
+    "timestamp": 1725753600000,
+    "candle_idx": 213,
+    "balance": 7838.130206351245,
+    "equity": 8071.318173599377,
+    "drawdown_nominal": 3247.6320069187823,
+    "drawdown_pct": 28.691989584939687
+  },
+  {
+    "timestamp": 1725840000000,
+    "candle_idx": 214,
+    "balance": 7838.130206351245,
+    "equity": 7684.69482009279,
+    "drawdown_nominal": 3634.255360425369,
+    "drawdown_pct": 32.107707008734266
+  },
+  {
+    "timestamp": 1725926400000,
+    "candle_idx": 215,
+    "balance": 7674.6163215167835,
+    "equity": 7778.746593223547,
+    "drawdown_nominal": 3540.2035872946117,
+    "drawdown_pct": 31.27678389633612
+  },
+  {
+    "timestamp": 1726012800000,
+    "candle_idx": 216,
+    "balance": 7674.6163215167835,
+    "equity": 7726.5061479797705,
+    "drawdown_nominal": 3592.4440325383885,
+    "drawdown_pct": 31.738314731003907
+  },
+  {
+    "timestamp": 1726099200000,
+    "candle_idx": 217,
+    "balance": 7674.6163215167835,
+    "equity": 7865.75790295825,
+    "drawdown_nominal": 3453.1922775599087,
+    "drawdown_pct": 30.50806145876886
+  },
+  {
+    "timestamp": 1726185600000,
+    "candle_idx": 218,
+    "balance": 7674.6163215167835,
+    "equity": 8280.483821627666,
+    "drawdown_nominal": 3038.466358890493,
+    "drawdown_pct": 26.84406513353342
+  },
+  {
+    "timestamp": 1726272000000,
+    "candle_idx": 219,
+    "balance": 7674.6163215167835,
+    "equity": 8191.957838759951,
+    "drawdown_nominal": 3126.9923417582077,
+    "drawdown_pct": 27.62616931683553
+  },
+  {
+    "timestamp": 1726358400000,
+    "candle_idx": 220,
+    "balance": 7674.6163215167835,
+    "equity": 8041.011194348228,
+    "drawdown_nominal": 3277.938986169931,
+    "drawdown_pct": 28.959743915224774
+  },
+  {
+    "timestamp": 1726444800000,
+    "candle_idx": 221,
+    "balance": 8030.827996911812,
+    "equity": 8186.075578593473,
+    "drawdown_nominal": 3132.8746019246855,
+    "drawdown_pct": 27.678137565415707
+  },
+  {
+    "timestamp": 1726531200000,
+    "candle_idx": 222,
+    "balance": 8030.827996911812,
+    "equity": 7830.937920472659,
+    "drawdown_nominal": 3488.0122600454997,
+    "drawdown_pct": 30.81568700645898
+  },
+  {
+    "timestamp": 1726617600000,
+    "candle_idx": 223,
+    "balance": 7820.83797543444,
+    "equity": 8060.583347942543,
+    "drawdown_nominal": 3258.366832575616,
+    "drawdown_pct": 28.786828995712167
+  },
+  {
+    "timestamp": 1726704000000,
+    "candle_idx": 224,
+    "balance": 7820.83797543444,
+    "equity": 8257.55257514837,
+    "drawdown_nominal": 3061.3976053697897,
+    "drawdown_pct": 27.046656770686884
+  },
+  {
+    "timestamp": 1726790400000,
+    "candle_idx": 225,
+    "balance": 7820.83797543444,
+    "equity": 8299.509673327417,
+    "drawdown_nominal": 3019.440507190742,
+    "drawdown_pct": 26.67597665009352
+  },
+  {
+    "timestamp": 1726876800000,
+    "candle_idx": 226,
+    "balance": 7820.83797543444,
+    "equity": 8324.033005310594,
+    "drawdown_nominal": 2994.9171752075654,
+    "drawdown_pct": 26.459319348912125
+  },
+  {
+    "timestamp": 1726963200000,
+    "candle_idx": 227,
+    "balance": 7820.83797543444,
+    "equity": 8362.133618451922,
+    "drawdown_nominal": 2956.8165620662367,
+    "drawdown_pct": 26.122710277101685
+  },
+  {
+    "timestamp": 1727049600000,
+    "candle_idx": 228,
+    "balance": 7820.83797543444,
+    "equity": 8322.54578816578,
+    "drawdown_nominal": 2996.4043923523786,
+    "drawdown_pct": 26.472458528085944
+  },
+  {
+    "timestamp": 1727136000000,
+    "candle_idx": 229,
+    "balance": 7820.83797543444,
+    "equity": 8475.530195266025,
+    "drawdown_nominal": 2843.419985252134,
+    "drawdown_pct": 25.120880822906567
+  },
+  {
+    "timestamp": 1727222400000,
+    "candle_idx": 230,
+    "balance": 7820.83797543444,
+    "equity": 8291.378889739728,
+    "drawdown_nominal": 3027.571290778431,
+    "drawdown_pct": 26.747810022076045
+  },
+  {
+    "timestamp": 1727308800000,
+    "candle_idx": 231,
+    "balance": 8281.143619282575,
+    "equity": 7960.966953488407,
+    "drawdown_nominal": 3357.983227029752,
+    "drawdown_pct": 29.666914099590375
+  },
+  {
+    "timestamp": 1727395200000,
+    "candle_idx": 232,
+    "balance": 7950.8068651555095,
+    "equity": 8042.248251512245,
+    "drawdown_nominal": 3276.7019290059143,
+    "drawdown_pct": 28.948814834839332
+  },
+  {
+    "timestamp": 1727481600000,
+    "candle_idx": 233,
+    "balance": 7950.8068651555095,
+    "equity": 8055.758242230935,
+    "drawdown_nominal": 3263.191938287224,
+    "drawdown_pct": 28.829457557854905
+  },
+  {
+    "timestamp": 1727568000000,
+    "candle_idx": 234,
+    "balance": 7950.8068651555095,
+    "equity": 8016.480303286273,
+    "drawdown_nominal": 3302.469877231886,
+    "drawdown_pct": 29.176467998913886
+  },
+  {
+    "timestamp": 1727654400000,
+    "candle_idx": 235,
+    "balance": 7950.8068651555095,
+    "equity": 7667.50366398584,
+    "drawdown_nominal": 3651.446516532319,
+    "drawdown_pct": 32.259586430701674
+  },
+  {
+    "timestamp": 1727740800000,
+    "candle_idx": 236,
+    "balance": 7657.646849173674,
+    "equity": 8055.865003659238,
+    "drawdown_nominal": 3263.085176858921,
+    "drawdown_pct": 28.828514348223266
+  },
+  {
+    "timestamp": 1727827200000,
+    "candle_idx": 237,
+    "balance": 7657.646849173674,
+    "equity": 8080.577767130458,
+    "drawdown_nominal": 3238.3724133877013,
+    "drawdown_pct": 28.610183468794588
+  },
+  {
+    "timestamp": 1727913600000,
+    "candle_idx": 238,
+    "balance": 7657.646849173674,
+    "equity": 8064.245235975006,
+    "drawdown_nominal": 3254.704944543153,
+    "drawdown_pct": 28.75447716118633
+  },
+  {
+    "timestamp": 1728000000000,
+    "candle_idx": 239,
+    "balance": 7657.646849173674,
+    "equity": 7853.706703013074,
+    "drawdown_nominal": 3465.243477505085,
+    "drawdown_pct": 30.614530696224456
+  },
+  {
+    "timestamp": 1728086400000,
+    "candle_idx": 240,
+    "balance": 7657.646849173674,
+    "equity": 7858.128155902494,
+    "drawdown_nominal": 3460.822024615665,
+    "drawdown_pct": 30.575468302460852
+  },
+  {
+    "timestamp": 1728172800000,
+    "candle_idx": 241,
+    "balance": 7657.646849173674,
+    "equity": 7737.815685510436,
+    "drawdown_nominal": 3581.1344950077228,
+    "drawdown_pct": 31.638397889333103
+  },
+  {
+    "timestamp": 1728259200000,
+    "candle_idx": 242,
+    "balance": 7727.855769928605,
+    "equity": 7632.995716802136,
+    "drawdown_nominal": 3685.9544637160234,
+    "drawdown_pct": 32.56445522713033
+  },
+  {
+    "timestamp": 1728345600000,
+    "candle_idx": 243,
+    "balance": 7628.044737884783,
+    "equity": 7628.044737884783,
+    "drawdown_nominal": 3690.905442633376,
+    "drawdown_pct": 32.60819584651987
+  },
+  {
+    "timestamp": 1728432000000,
+    "candle_idx": 244,
+    "balance": 7623.044737884783,
+    "equity": 7377.795745357374,
+    "drawdown_nominal": 3941.1544351607854,
+    "drawdown_pct": 34.819081030537475
+  },
+  {
+    "timestamp": 1728518400000,
+    "candle_idx": 245,
+    "balance": 7367.9167619193395,
+    "equity": 7418.978828833044,
+    "drawdown_nominal": 3899.971351685115,
+    "drawdown_pct": 34.455239129841125
+  },
+  {
+    "timestamp": 1728604800000,
+    "candle_idx": 246,
+    "balance": 7367.9167619193395,
+    "equity": 7053.91358130109,
+    "drawdown_nominal": 4265.036599217069,
+    "drawdown_pct": 37.68049625801802
+  },
+  {
+    "timestamp": 1728691200000,
+    "candle_idx": 247,
+    "balance": 7043.758229720404,
+    "equity": 7150.286868436209,
+    "drawdown_nominal": 4168.66331208195,
+    "drawdown_pct": 36.829063169276324
+  },
+  {
+    "timestamp": 1728777600000,
+    "candle_idx": 248,
+    "balance": 7043.758229720404,
+    "equity": 7096.529264701382,
+    "drawdown_nominal": 4222.420915816777,
+    "drawdown_pct": 37.30399770717502
+  },
+  {
+    "timestamp": 1728864000000,
+    "candle_idx": 249,
+    "balance": 7043.758229720404,
+    "equity": 7610.435646841835,
+    "drawdown_nominal": 3708.5145336763244,
+    "drawdown_pct": 32.7637676156514
+  },
+  {
+    "timestamp": 1728950400000,
+    "candle_idx": 250,
+    "balance": 7600.153906310696,
+    "equity": 7450.323387576963,
+    "drawdown_nominal": 3868.626792941196,
+    "drawdown_pct": 34.178318052850535
+  },
+  {
+    "timestamp": 1729036800000,
+    "candle_idx": 251,
+    "balance": 7440.248472317596,
+    "equity": 7521.6315508035805,
+    "drawdown_nominal": 3797.3186297145785,
+    "drawdown_pct": 33.54832885695009
+  },
+  {
+    "timestamp": 1729123200000,
+    "candle_idx": 252,
+    "balance": 7516.589369122236,
+    "equity": 7516.589369122236,
+    "drawdown_nominal": 3802.3608113959226,
+    "drawdown_pct": 33.59287522919249
+  },
+  {
+    "timestamp": 1729209600000,
+    "candle_idx": 253,
+    "balance": 7516.589369122236,
+    "equity": 7516.589369122236,
+    "drawdown_nominal": 3802.3608113959226,
+    "drawdown_pct": 33.59287522919249
+  },
+  {
+    "timestamp": 1729296000000,
+    "candle_idx": 254,
+    "balance": 7511.589369122236,
+    "equity": 7504.2838790734995,
+    "drawdown_nominal": 3814.6663014446594,
+    "drawdown_pct": 33.70159105400384
+  },
+  {
+    "timestamp": 1729382400000,
+    "candle_idx": 255,
+    "balance": 7511.589369122236,
+    "equity": 7599.857342505643,
+    "drawdown_nominal": 3719.092838012516,
+    "drawdown_pct": 32.85722420100151
+  },
+  {
+    "timestamp": 1729468800000,
+    "candle_idx": 256,
+    "balance": 7511.589369122236,
+    "equity": 7358.071780778635,
+    "drawdown_nominal": 3960.878399739524,
+    "drawdown_pct": 34.993337160869125
+  },
+  {
+    "timestamp": 1729555200000,
+    "candle_idx": 257,
+    "balance": 7348.148539572807,
+    "equity": 7340.950290899288,
+    "drawdown_nominal": 3977.999889618871,
+    "drawdown_pct": 35.14460109971759
+  },
+  {
+    "timestamp": 1729641600000,
+    "candle_idx": 258,
+    "balance": 7330.94520685788,
+    "equity": 7218.620600967661,
+    "drawdown_nominal": 4100.329579550498,
+    "drawdown_pct": 36.2253522999674
+  },
+  {
+    "timestamp": 1729728000000,
+    "candle_idx": 259,
+    "balance": 7208.676763270606,
+    "equity": 6979.2390890414135,
+    "drawdown_nominal": 4339.711091476745,
+    "drawdown_pct": 38.34022610105774
+  },
+  {
+    "timestamp": 1729814400000,
+    "candle_idx": 260,
+    "balance": 6969.125870909652,
+    "equity": 6749.187740514261,
+    "drawdown_nominal": 4569.762440003898,
+    "drawdown_pct": 40.372670319454514
+  },
+  {
+    "timestamp": 1729900800000,
+    "candle_idx": 261,
+    "balance": 6739.296243999762,
+    "equity": 6680.158322684804,
+    "drawdown_nominal": 4638.791857833355,
+    "drawdown_pct": 40.98252738860452
+  },
+  {
+    "timestamp": 1729987200000,
+    "candle_idx": 262,
+    "balance": 6670.128753724147,
+    "equity": 6808.584825586447,
+    "drawdown_nominal": 4510.365354931712,
+    "drawdown_pct": 39.84791242119626
+  },
+  {
+    "timestamp": 1730073600000,
+    "candle_idx": 263,
+    "balance": 6670.128753724147,
+    "equity": 7097.812754203485,
+    "drawdown_nominal": 4221.137426314674,
+    "drawdown_pct": 37.29265840908082
+  },
+  {
+    "timestamp": 1730160000000,
+    "candle_idx": 264,
+    "balance": 6670.128753724147,
+    "equity": 7511.301482346431,
+    "drawdown_nominal": 3807.648698171728,
+    "drawdown_pct": 33.63959234245363
+  },
+  {
+    "timestamp": 1730246400000,
+    "candle_idx": 265,
+    "balance": 7500.879406253572,
+    "equity": 7554.7272659431,
+    "drawdown_nominal": 3764.222914575059,
+    "drawdown_pct": 33.255936765707546
+  },
+  {
+    "timestamp": 1730332800000,
+    "candle_idx": 266,
+    "balance": 7544.752814358261,
+    "equity": 7261.008658769914,
+    "drawdown_nominal": 4057.9415217482447,
+    "drawdown_pct": 35.85086476246404
+  },
+  {
+    "timestamp": 1730419200000,
+    "candle_idx": 267,
+    "balance": 7251.150530847709,
+    "equity": 7364.3924199329695,
+    "drawdown_nominal": 3954.5577605851895,
+    "drawdown_pct": 34.937495947209456
+  },
+  {
+    "timestamp": 1730505600000,
+    "candle_idx": 268,
+    "balance": 7251.150530847709,
+    "equity": 7381.644736376899,
+    "drawdown_nominal": 3937.3054441412596,
+    "drawdown_pct": 34.78507618946882
+  },
+  {
+    "timestamp": 1730592000000,
+    "candle_idx": 269,
+    "balance": 7371.709983479664,
+    "equity": 7285.40335371788,
+    "drawdown_nominal": 4033.5468268002787,
+    "drawdown_pct": 35.63534393624861
+  },
+  {
+    "timestamp": 1730678400000,
+    "candle_idx": 270,
+    "balance": 7275.446507032761,
+    "equity": 7410.083609312206,
+    "drawdown_nominal": 3908.866571205953,
+    "drawdown_pct": 34.53382609576088
+  },
+  {
+    "timestamp": 1730764800000,
+    "candle_idx": 271,
+    "balance": 7275.446507032761,
+    "equity": 7188.785449881858,
+    "drawdown_nominal": 4130.164730636301,
+    "drawdown_pct": 36.48893815033322
+  },
+  {
+    "timestamp": 1730851200000,
+    "candle_idx": 272,
+    "balance": 7178.742119353283,
+    "equity": 8072.4714490930455,
+    "drawdown_nominal": 3246.4787314251134,
+    "drawdown_pct": 28.68180069396238
+  },
+  {
+    "timestamp": 1730937600000,
+    "candle_idx": 273,
+    "balance": 7178.742119353283,
+    "equity": 8113.684036129228,
+    "drawdown_nominal": 3205.266144388931,
+    "drawdown_pct": 28.3176981369327
+  },
+  {
+    "timestamp": 1731024000000,
+    "candle_idx": 274,
+    "balance": 7178.742119353283,
+    "equity": 8207.654212285288,
+    "drawdown_nominal": 3111.295968232871,
+    "drawdown_pct": 27.487495912721137
+  },
+  {
+    "timestamp": 1731110400000,
+    "candle_idx": 275,
+    "balance": 7178.742119353283,
+    "equity": 8231.825344129387,
+    "drawdown_nominal": 3087.1248363887717,
+    "drawdown_pct": 27.273950208759107
+  },
+  {
+    "timestamp": 1731196800000,
+    "candle_idx": 276,
+    "balance": 7178.742119353283,
+    "equity": 8764.107744480765,
+    "drawdown_nominal": 2554.842436037394,
+    "drawdown_pct": 22.57137274475077
+  },
+  {
+    "timestamp": 1731283200000,
+    "candle_idx": 277,
+    "balance": 8753.315061668201,
+    "equity": 7723.331365013191,
+    "drawdown_nominal": 3595.6188155049676,
+    "drawdown_pct": 31.766363118141822
+  },
+  {
+    "timestamp": 1731369600000,
+    "candle_idx": 278,
+    "balance": 7712.815128297532,
+    "equity": 7634.303486748935,
+    "drawdown_nominal": 3684.646693769224,
+    "drawdown_pct": 32.55290141758137
+  },
+  {
+    "timestamp": 1731456000000,
+    "candle_idx": 279,
+    "balance": 7712.815128297532,
+    "equity": 7907.653139307368,
+    "drawdown_nominal": 3411.2970412107907,
+    "drawdown_pct": 30.13792787145767
+  },
+  {
+    "timestamp": 1731542400000,
+    "candle_idx": 280,
+    "balance": 7712.815128297532,
+    "equity": 7563.639737989798,
+    "drawdown_nominal": 3755.310442528361,
+    "drawdown_pct": 33.17719737817991
+  },
+  {
+    "timestamp": 1731628800000,
+    "candle_idx": 281,
+    "balance": 7553.714325684952,
+    "equity": 7129.270585883136,
+    "drawdown_nominal": 4189.679594635023,
+    "drawdown_pct": 37.014736594973044
+  },
+  {
+    "timestamp": 1731715200000,
+    "candle_idx": 282,
+    "balance": 7553.714325684952,
+    "equity": 7180.246479661811,
+    "drawdown_nominal": 4138.703700856348,
+    "drawdown_pct": 36.564377745736195
+  },
+  {
+    "timestamp": 1731801600000,
+    "candle_idx": 283,
+    "balance": 7169.9383002381155,
+    "equity": 7089.133981607764,
+    "drawdown_nominal": 4229.816198910395,
+    "drawdown_pct": 37.369333122347584
+  },
+  {
+    "timestamp": 1731888000000,
+    "candle_idx": 284,
+    "balance": 7169.9383002381155,
+    "equity": 7156.260988965693,
+    "drawdown_nominal": 4162.689191552466,
+    "drawdown_pct": 36.77628335812594
+  },
+  {
+    "timestamp": 1731974400000,
+    "candle_idx": 285,
+    "balance": 7169.9383002381155,
+    "equity": 7360.1191608776835,
+    "drawdown_nominal": 3958.8310196404755,
+    "drawdown_pct": 34.975249086742146
+  },
+  {
+    "timestamp": 1732060800000,
+    "candle_idx": 286,
+    "balance": 7169.9383002381155,
+    "equity": 7578.224256056978,
+    "drawdown_nominal": 3740.7259244611805,
+    "drawdown_pct": 33.04834692973211
+  },
+  {
+    "timestamp": 1732147200000,
+    "candle_idx": 287,
+    "balance": 7169.9383002381155,
+    "equity": 8023.157458011587,
+    "drawdown_nominal": 3295.7927225065723,
+    "drawdown_pct": 29.117477062309128
+  },
+  {
+    "timestamp": 1732233600000,
+    "candle_idx": 288,
+    "balance": 8012.7308484326995,
+    "equity": 7954.258834606419,
+    "drawdown_nominal": 3364.6913459117395,
+    "drawdown_pct": 29.72617859651813
+  },
+  {
+    "timestamp": 1732320000000,
+    "candle_idx": 289,
+    "balance": 7944.229598599506,
+    "equity": 7820.903141454337,
+    "drawdown_nominal": 3498.047039063822,
+    "drawdown_pct": 30.904341686074005
+  },
+  {
+    "timestamp": 1732406400000,
+    "candle_idx": 290,
+    "balance": 7944.229598599506,
+    "equity": 7843.92219254037,
+    "drawdown_nominal": 3475.027987977789,
+    "drawdown_pct": 30.70097431790895
+  },
+  {
+    "timestamp": 1732492800000,
+    "candle_idx": 291,
+    "balance": 7944.229598599506,
+    "equity": 7349.440333542676,
+    "drawdown_nominal": 3969.509846975483,
+    "drawdown_pct": 35.069593766811394
+  },
+  {
+    "timestamp": 1732579200000,
+    "candle_idx": 292,
+    "balance": 7339.737728175204,
+    "equity": 7452.075099174303,
+    "drawdown_nominal": 3866.8750813438555,
+    "drawdown_pct": 34.16284213353467
+  },
+  {
+    "timestamp": 1732665600000,
+    "candle_idx": 293,
+    "balance": 7339.737728175204,
+    "equity": 7032.985799001129,
+    "drawdown_nominal": 4285.96438151703,
+    "drawdown_pct": 37.86538780684718
+  },
+  {
+    "timestamp": 1732752000000,
+    "candle_idx": 294,
+    "balance": 7022.8324230365415,
+    "equity": 6999.97378638267,
+    "drawdown_nominal": 4318.976394135489,
+    "drawdown_pct": 38.1570404079451
+  },
+  {
+    "timestamp": 1732838400000,
+    "candle_idx": 295,
+    "balance": 7022.8324230365415,
+    "equity": 7189.412664382769,
+    "drawdown_nominal": 4129.5375161353895,
+    "drawdown_pct": 36.48339687229145
+  },
+  {
+    "timestamp": 1732924800000,
+    "candle_idx": 296,
+    "balance": 7022.8324230365415,
+    "equity": 7079.671805777202,
+    "drawdown_nominal": 4239.278374740957,
+    "drawdown_pct": 37.45292900076084
+  },
+  {
+    "timestamp": 1733011200000,
+    "candle_idx": 297,
+    "balance": 7069.6433860858315,
+    "equity": 6989.028698444279,
+    "drawdown_nominal": 4329.92148207388,
+    "drawdown_pct": 38.25373743164284
+  },
+  {
+    "timestamp": 1733097600000,
+    "candle_idx": 298,
+    "balance": 6978.989428877514,
+    "equity": 6840.640131345802,
+    "drawdown_nominal": 4478.310049172357,
+    "drawdown_pct": 39.564712077983096
+  },
+  {
+    "timestamp": 1733184000000,
+    "candle_idx": 299,
+    "balance": 6830.708277545475,
+    "equity": 6829.760871221579,
+    "drawdown_nominal": 4489.18930929658,
+    "drawdown_pct": 39.66082752995273
+  },
+  {
+    "timestamp": 1733270400000,
+    "candle_idx": 300,
+    "balance": 6819.760397518417,
+    "equity": 7105.377388037636,
+    "drawdown_nominal": 4213.572792480523,
+    "drawdown_pct": 37.2258268238763
+  },
+  {
+    "timestamp": 1733356800000,
+    "candle_idx": 301,
+    "balance": 6819.760397518417,
+    "equity": 6934.099838783173,
+    "drawdown_nominal": 4384.850341734986,
+    "drawdown_pct": 38.73901971299476
+  },
+  {
+    "timestamp": 1733443200000,
+    "candle_idx": 302,
+    "balance": 6924.042669062541,
+    "equity": 6635.715077607414,
+    "drawdown_nominal": 4683.235102910745,
+    "drawdown_pct": 41.3751719746182
+  },
+  {
+    "timestamp": 1733529600000,
+    "candle_idx": 303,
+    "balance": 6625.570913811686,
+    "equity": 6634.709597624656,
+    "drawdown_nominal": 4684.2405828935025,
+    "drawdown_pct": 41.38405513044733
+  },
+  {
+    "timestamp": 1733616000000,
+    "candle_idx": 304,
+    "balance": 6625.570913811686,
+    "equity": 6762.801560756308,
+    "drawdown_nominal": 4556.148619761851,
+    "drawdown_pct": 40.252395735461036
+  },
+  {
+    "timestamp": 1733702400000,
+    "candle_idx": 305,
+    "balance": 6625.570913811686,
+    "equity": 6378.493588214669,
+    "drawdown_nominal": 4940.45659230349,
+    "drawdown_pct": 43.6476573667305
+  },
+  {
+    "timestamp": 1733788800000,
+    "candle_idx": 306,
+    "balance": 6368.618128974502,
+    "equity": 6438.87971738724,
+    "drawdown_nominal": 4880.070463130919,
+    "drawdown_pct": 43.114161519416804
+  },
+  {
+    "timestamp": 1733875200000,
+    "candle_idx": 307,
+    "balance": 6368.618128974502,
+    "equity": 5972.991149050886,
+    "drawdown_nominal": 5345.959031467273,
+    "drawdown_pct": 47.23016663390373
+  },
+  {
+    "timestamp": 1733961600000,
+    "candle_idx": 308,
+    "balance": 5962.793335560924,
+    "equity": 5851.969108119638,
+    "drawdown_nominal": 5466.981072398521,
+    "drawdown_pct": 48.29936509313493
+  },
+  {
+    "timestamp": 1734048000000,
+    "candle_idx": 309,
+    "balance": 5842.024520233358,
+    "equity": 5700.0346116004375,
+    "drawdown_nominal": 5618.915568917721,
+    "drawdown_pct": 49.64166710963029
+  },
+  {
+    "timestamp": 1734134400000,
+    "candle_idx": 310,
+    "balance": 5689.964617103201,
+    "equity": 5689.546571081854,
+    "drawdown_nominal": 5629.403609436305,
+    "drawdown_pct": 49.73432623747622
+  },
+  {
+    "timestamp": 1734220800000,
+    "candle_idx": 311,
+    "balance": 5689.964617103201,
+    "equity": 5989.671077807269,
+    "drawdown_nominal": 5329.27910271089,
+    "drawdown_pct": 47.08280377347616
+  },
+  {
+    "timestamp": 1734307200000,
+    "candle_idx": 312,
+    "balance": 5689.964617103201,
+    "equity": 6146.898778009903,
+    "drawdown_nominal": 5172.051402508256,
+    "drawdown_pct": 45.69373767021466
+  },
+  {
+    "timestamp": 1734393600000,
+    "candle_idx": 313,
+    "balance": 5689.964617103201,
+    "equity": 6154.301347652032,
+    "drawdown_nominal": 5164.648832866127,
+    "drawdown_pct": 45.62833788026885
+  },
+  {
+    "timestamp": 1734480000000,
+    "candle_idx": 314,
+    "balance": 5689.964617103201,
+    "equity": 5569.65511318185,
+    "drawdown_nominal": 5749.295067336309,
+    "drawdown_pct": 50.79353628777186
+  },
+  {
+    "timestamp": 1734566400000,
+    "candle_idx": 315,
+    "balance": 5559.71526793381,
+    "equity": 5833.3719808737405,
+    "drawdown_nominal": 5485.578199644418,
+    "drawdown_pct": 48.4636659068085
+  },
+  {
+    "timestamp": 1734652800000,
+    "candle_idx": 316,
+    "balance": 5559.71526793381,
+    "equity": 5799.083931922406,
+    "drawdown_nominal": 5519.866248595753,
+    "drawdown_pct": 48.76659195917642
+  },
+  {
+    "timestamp": 1734739200000,
+    "candle_idx": 317,
+    "balance": 5559.71526793381,
+    "equity": 5850.324396251129,
+    "drawdown_nominal": 5468.62578426703,
+    "drawdown_pct": 48.313895697495575
+  },
+  {
+    "timestamp": 1734825600000,
+    "candle_idx": 318,
+    "balance": 5559.71526793381,
+    "equity": 6060.467682931971,
+    "drawdown_nominal": 5258.482497586188,
+    "drawdown_pct": 46.45733406121826
+  },
+  {
+    "timestamp": 1734912000000,
+    "candle_idx": 319,
+    "balance": 5559.71526793381,
+    "equity": 6090.885627283699,
+    "drawdown_nominal": 5228.06455323446,
+    "drawdown_pct": 46.18859938294321
+  },
+  {
+    "timestamp": 1734998400000,
+    "candle_idx": 320,
+    "balance": 5559.71526793381,
+    "equity": 5713.444644632406,
+    "drawdown_nominal": 5605.505535885753,
+    "drawdown_pct": 49.52319293297873
+  },
+  {
+    "timestamp": 1735084800000,
+    "candle_idx": 321,
+    "balance": 5703.521509320755,
+    "equity": 5781.161100343096,
+    "drawdown_nominal": 5537.789080175063,
+    "drawdown_pct": 48.92493554487537
+  },
+  {
+    "timestamp": 1735171200000,
+    "candle_idx": 322,
+    "balance": 5703.521509320755,
+    "equity": 5412.43334892763,
+    "drawdown_nominal": 5906.516831590529,
+    "drawdown_pct": 52.182549948462984
+  },
+  {
+    "timestamp": 1735257600000,
+    "candle_idx": 323,
+    "balance": 5402.578893007826,
+    "equity": 5558.393181525818,
+    "drawdown_nominal": 5760.556998992341,
+    "drawdown_pct": 50.89303254384174
+  },
+  {
+    "timestamp": 1735344000000,
+    "candle_idx": 324,
+    "balance": 5402.578893007826,
+    "equity": 5453.89863294327,
+    "drawdown_nominal": 5865.051547574889,
+    "drawdown_pct": 51.81621487891732
+  },
+  {
+    "timestamp": 1735430400000,
+    "candle_idx": 325,
+    "balance": 5443.924292813238,
+    "equity": 5280.041816422891,
+    "drawdown_nominal": 6038.908364095268,
+    "drawdown_pct": 53.352194927841076
+  },
+  {
+    "timestamp": 1735516800000,
+    "candle_idx": 326,
+    "balance": 5270.122708867802,
+    "equity": 5371.057023899914,
+    "drawdown_nominal": 5947.893156618245,
+    "drawdown_pct": 52.54809908833755
+  },
+  {
+    "timestamp": 1735603200000,
+    "candle_idx": 327,
+    "balance": 5270.122708867802,
+    "equity": 5287.425155181306,
+    "drawdown_nominal": 6031.525025336853,
+    "drawdown_pct": 53.28696503778359
+  },
+  {
+    "timestamp": 1735689600000,
+    "candle_idx": 328,
+    "balance": 5277.433806404463,
+    "equity": 5385.986213004446,
+    "drawdown_nominal": 5932.963967513713,
+    "drawdown_pct": 52.416203560338616
+  },
+  {
+    "timestamp": 1735776000000,
+    "candle_idx": 329,
+    "balance": 5380.93086868539,
+    "equity": 5380.93086868539,
+    "drawdown_nominal": 5938.019311832769,
+    "drawdown_pct": 52.460866221083926
+  },
+  {
+    "timestamp": 1735862400000,
+    "candle_idx": 330,
+    "balance": 5375.93086868539,
+    "equity": 5498.567624407602,
+    "drawdown_nominal": 5820.382556110557,
+    "drawdown_pct": 51.42157588190843
+  },
+  {
+    "timestamp": 1735948800000,
+    "candle_idx": 331,
+    "balance": 5375.93086868539,
+    "equity": 5503.343631037095,
+    "drawdown_nominal": 5815.606549481064,
+    "drawdown_pct": 51.37938109746886
+  },
+  {
+    "timestamp": 1736035200000,
+    "candle_idx": 332,
+    "balance": 5375.93086868539,
+    "equity": 5518.099553073943,
+    "drawdown_nominal": 5800.850627444216,
+    "drawdown_pct": 51.249016339240264
+  },
+  {
+    "timestamp": 1736121600000,
+    "candle_idx": 333,
+    "balance": 5375.93086868539,
+    "equity": 5917.336381859158,
+    "drawdown_nominal": 5401.613798659001,
+    "drawdown_pct": 47.72186212071238
+  },
+  {
+    "timestamp": 1736208000000,
+    "candle_idx": 334,
+    "balance": 5907.065679102571,
+    "equity": 6423.616665256123,
+    "drawdown_nominal": 4895.333515262036,
+    "drawdown_pct": 43.24900664098459
+  },
+  {
+    "timestamp": 1736294400000,
+    "candle_idx": 335,
+    "balance": 5907.065679102571,
+    "equity": 6608.875029270223,
+    "drawdown_nominal": 4710.0751512479355,
+    "drawdown_pct": 41.61229686614203
+  },
+  {
+    "timestamp": 1736380800000,
+    "candle_idx": 336,
+    "balance": 5907.065679102571,
+    "equity": 6854.202488589677,
+    "drawdown_nominal": 4464.747691928482,
+    "drawdown_pct": 39.4448921562803
+  },
+  {
+    "timestamp": 1736467200000,
+    "candle_idx": 337,
+    "balance": 5907.065679102571,
+    "equity": 6641.593573495523,
+    "drawdown_nominal": 4677.356607022636,
+    "drawdown_pct": 41.323236982464714
+  },
+  {
+    "timestamp": 1736553600000,
+    "candle_idx": 338,
+    "balance": 5907.065679102571,
+    "equity": 6653.929785147824,
+    "drawdown_nominal": 4665.020395370335,
+    "drawdown_pct": 41.2142497402244
+  },
+  {
+    "timestamp": 1736640000000,
+    "candle_idx": 339,
+    "balance": 5907.065679102571,
+    "equity": 6659.302668957378,
+    "drawdown_nominal": 4659.647511560781,
+    "drawdown_pct": 41.166781700133534
+  },
+  {
+    "timestamp": 1736726400000,
+    "candle_idx": 340,
+    "balance": 6654.677808830376,
+    "equity": 6654.677808830376,
+    "drawdown_nominal": 4664.272371687783,
+    "drawdown_pct": 41.20764114428023
+  },
+  {
+    "timestamp": 1736812800000,
+    "candle_idx": 341,
+    "balance": 6649.677808830376,
+    "equity": 6435.50039027571,
+    "drawdown_nominal": 4883.449790242449,
+    "drawdown_pct": 43.14401700122064
+  },
+  {
+    "timestamp": 1736899200000,
+    "candle_idx": 342,
+    "balance": 6425.394359892187,
+    "equity": 6833.064756331323,
+    "drawdown_nominal": 4485.885424186836,
+    "drawdown_pct": 39.63163855874027
+  },
+  {
+    "timestamp": 1736985600000,
+    "candle_idx": 343,
+    "balance": 6822.860921133104,
+    "equity": 6873.613503166362,
+    "drawdown_nominal": 4445.336677351797,
+    "drawdown_pct": 39.27340085834973
+  },
+  {
+    "timestamp": 1737072000000,
+    "candle_idx": 344,
+    "balance": 6863.638879457379,
+    "equity": 7272.708831341267,
+    "drawdown_nominal": 4046.241349176892,
+    "drawdown_pct": 35.74749676114983
+  },
+  {
+    "timestamp": 1737158400000,
+    "candle_idx": 345,
+    "balance": 7262.503296738373,
+    "equity": 7216.50294719106,
+    "drawdown_nominal": 4102.447233327099,
+    "drawdown_pct": 36.244061223876656
+  },
+  {
+    "timestamp": 1737244800000,
+    "candle_idx": 346,
+    "balance": 7211.479947016287,
+    "equity": 7211.479947016287,
+    "drawdown_nominal": 4107.470233501872,
+    "drawdown_pct": 36.28843813246504
+  },
+  {
+    "timestamp": 1737331200000,
+    "candle_idx": 347,
+    "balance": 7206.479947016287,
+    "equity": 7114.855984217725,
+    "drawdown_nominal": 4204.094196300434,
+    "drawdown_pct": 37.142085875918035
+  },
+  {
+    "timestamp": 1737417600000,
+    "candle_idx": 348,
+    "balance": 7104.811159589033,
+    "equity": 7484.609712297815,
+    "drawdown_nominal": 3834.3404682203436,
+    "drawdown_pct": 33.87540723361339
+  },
+  {
+    "timestamp": 1737504000000,
+    "candle_idx": 349,
+    "balance": 7474.419813021461,
+    "equity": 7704.0290356780415,
+    "drawdown_nominal": 3614.9211448401174,
+    "drawdown_pct": 31.93689421004796
+  },
+  {
+    "timestamp": 1737590400000,
+    "candle_idx": 350,
+    "balance": 7474.419813021461,
+    "equity": 7684.839976908535,
+    "drawdown_nominal": 3634.1102036096236,
+    "drawdown_pct": 32.10642458577604
+  },
+  {
+    "timestamp": 1737676800000,
+    "candle_idx": 351,
+    "balance": 7674.944244401451,
+    "equity": 7767.346011886595,
+    "drawdown_nominal": 3551.604168631564,
+    "drawdown_pct": 31.377505086509522
+  },
+  {
+    "timestamp": 1737763200000,
+    "candle_idx": 352,
+    "balance": 7674.944244401451,
+    "equity": 7755.446331055957,
+    "drawdown_nominal": 3563.503849462202,
+    "drawdown_pct": 31.48263569174109
+  },
+  {
+    "timestamp": 1737849600000,
+    "candle_idx": 353,
+    "balance": 7674.944244401451,
+    "equity": 7550.765084192674,
+    "drawdown_nominal": 3768.1850963254847,
+    "drawdown_pct": 33.29094161763494
+  },
+  {
+    "timestamp": 1737936000000,
+    "candle_idx": 354,
+    "balance": 7540.828135659635,
+    "equity": 7593.174651704605,
+    "drawdown_nominal": 3725.775528813554,
+    "drawdown_pct": 32.91626404740475
+  },
+  {
+    "timestamp": 1738022400000,
+    "candle_idx": 355,
+    "balance": 7540.828135659635,
+    "equity": 7665.997681053364,
+    "drawdown_nominal": 3652.9524994647945,
+    "drawdown_pct": 32.272891400760365
+  },
+  {
+    "timestamp": 1738108800000,
+    "candle_idx": 356,
+    "balance": 7540.828135659635,
+    "equity": 7432.347343268365,
+    "drawdown_nominal": 3886.602837249794,
+    "drawdown_pct": 34.33713175926244
+  },
+  {
+    "timestamp": 1738195200000,
+    "candle_idx": 357,
+    "balance": 7422.2921279161155,
+    "equity": 7517.699338236818,
+    "drawdown_nominal": 3801.2508422813407,
+    "drawdown_pct": 33.58306893888393
+  },
+  {
+    "timestamp": 1738281600000,
+    "candle_idx": 358,
+    "balance": 7422.2921279161155,
+    "equity": 7296.614970399119,
+    "drawdown_nominal": 4022.3352101190403,
+    "drawdown_pct": 35.5362921999795
+  },
+  {
+    "timestamp": 1738368000000,
+    "candle_idx": 359,
+    "balance": 7286.677808977877,
+    "equity": 7461.813775587517,
+    "drawdown_nominal": 3857.136404930642,
+    "drawdown_pct": 34.07680344392213
+  },
+  {
+    "timestamp": 1738454400000,
+    "candle_idx": 360,
+    "balance": 7456.900366802005,
+    "equity": 7456.900366802005,
+    "drawdown_nominal": 3862.049813716154,
+    "drawdown_pct": 34.120212140905075
+  },
+  {
+    "timestamp": 1738540800000,
+    "candle_idx": 361,
+    "balance": 7451.900366802005,
+    "equity": 7080.568934719558,
+    "drawdown_nominal": 4238.381245798601,
+    "drawdown_pct": 37.44500309837548
+  },
+  {
+    "timestamp": 1738627200000,
+    "candle_idx": 362,
+    "balance": 7070.384293050557,
+    "equity": 6718.5208342865835,
+    "drawdown_nominal": 4600.429346231575,
+    "drawdown_pct": 40.643604511571205
+  },
+  {
+    "timestamp": 1738713600000,
+    "candle_idx": 363,
+    "balance": 6708.6977524116,
+    "equity": 6826.4016232160775,
+    "drawdown_nominal": 4492.5485573020815,
+    "drawdown_pct": 39.69050561804329
+  },
+  {
+    "timestamp": 1738800000000,
+    "candle_idx": 364,
+    "balance": 6708.6977524116,
+    "equity": 6832.34251259422,
+    "drawdown_nominal": 4486.607667923939,
+    "drawdown_pct": 39.63801939552799
+  },
+  {
+    "timestamp": 1738886400000,
+    "candle_idx": 365,
+    "balance": 6708.6977524116,
+    "equity": 6837.206308908455,
+    "drawdown_nominal": 4481.743871609704,
+    "drawdown_pct": 39.59504901190879
+  },
+  {
+    "timestamp": 1738972800000,
+    "candle_idx": 366,
+    "balance": 6708.6977524116,
+    "equity": 6843.554304686823,
+    "drawdown_nominal": 4475.395875831336,
+    "drawdown_pct": 39.5389661095448
+  },
+  {
+    "timestamp": 1739059200000,
+    "candle_idx": 367,
+    "balance": 6708.6977524116,
+    "equity": 6841.71209708179,
+    "drawdown_nominal": 4477.238083436369,
+    "drawdown_pct": 39.555241537704255
+  },
+  {
+    "timestamp": 1739145600000,
+    "candle_idx": 368,
+    "balance": 6831.778604254125,
+    "equity": 6932.135477762293,
+    "drawdown_nominal": 4386.814702755866,
+    "drawdown_pct": 38.75637433501847
+  },
+  {
+    "timestamp": 1739232000000,
+    "candle_idx": 369,
+    "balance": 6831.778604254125,
+    "equity": 6760.813387110719,
+    "drawdown_nominal": 4558.13679340744,
+    "drawdown_pct": 40.269960735870804
+  },
+  {
+    "timestamp": 1739318400000,
+    "candle_idx": 370,
+    "balance": 6750.849905870553,
+    "equity": 6532.451587505656,
+    "drawdown_nominal": 4786.498593012503,
+    "drawdown_pct": 42.287478226124556
+  },
+  {
+    "timestamp": 1739404800000,
+    "candle_idx": 371,
+    "balance": 6522.341343745619,
+    "equity": 6393.409086669906,
+    "drawdown_nominal": 4925.541093848253,
+    "drawdown_pct": 43.515882792080376
+  },
+  {
+    "timestamp": 1739491200000,
+    "candle_idx": 372,
+    "balance": 6383.472531545763,
+    "equity": 6291.104528977035,
+    "drawdown_nominal": 5027.8456515411235,
+    "drawdown_pct": 44.41971712354474
+  },
+  {
+    "timestamp": 1739577600000,
+    "candle_idx": 373,
+    "balance": 6281.059380602876,
+    "equity": 6288.155756651116,
+    "drawdown_nominal": 5030.794423867043,
+    "drawdown_pct": 44.44576876507414
+  },
+  {
+    "timestamp": 1739664000000,
+    "candle_idx": 374,
+    "balance": 6281.059380602876,
+    "equity": 6139.28057686993,
+    "drawdown_nominal": 5179.669603648229,
+    "drawdown_pct": 45.761042508724195
+  },
+  {
+    "timestamp": 1739750400000,
+    "candle_idx": 375,
+    "balance": 6129.351466271796,
+    "equity": 6164.52901656096,
+    "drawdown_nominal": 5154.421163957199,
+    "drawdown_pct": 45.537979068313554
+  },
+  {
+    "timestamp": 1739836800000,
+    "candle_idx": 376,
+    "balance": 6129.351466271796,
+    "equity": 6175.792241434689,
+    "drawdown_nominal": 5143.15793908347,
+    "drawdown_pct": 45.43847138699949
+  },
+  {
+    "timestamp": 1739923200000,
+    "candle_idx": 377,
+    "balance": 6165.81546182227,
+    "equity": 6267.4787115969675,
+    "drawdown_nominal": 5051.471468921191,
+    "drawdown_pct": 44.628445115127676
+  },
+  {
+    "timestamp": 1740009600000,
+    "candle_idx": 378,
+    "balance": 6165.81546182227,
+    "equity": 6441.054524057366,
+    "drawdown_nominal": 4877.895656460793,
+    "drawdown_pct": 43.0949476644617
+  },
+  {
+    "timestamp": 1740096000000,
+    "candle_idx": 379,
+    "balance": 6165.81546182227,
+    "equity": 6219.147825172198,
+    "drawdown_nominal": 5099.802355345961,
+    "drawdown_pct": 45.055436007869254
+  },
+  {
+    "timestamp": 1740182400000,
+    "candle_idx": 380,
+    "balance": 6209.122203708641,
+    "equity": 6170.755353532221,
+    "drawdown_nominal": 5148.194826985938,
+    "drawdown_pct": 45.482970990073426
+  },
+  {
+    "timestamp": 1740268800000,
+    "candle_idx": 381,
+    "balance": 6160.736170107133,
+    "equity": 6130.3884813569075,
+    "drawdown_nominal": 5188.561699161251,
+    "drawdown_pct": 45.83960187484216
+  },
+  {
+    "timestamp": 1740355200000,
+    "candle_idx": 382,
+    "balance": 6125.403655201282,
+    "equity": 6125.403655201282,
+    "drawdown_nominal": 5193.546525316877,
+    "drawdown_pct": 45.88364152583563
+  },
+  {
+    "timestamp": 1740441600000,
+    "candle_idx": 383,
+    "balance": 6120.403655201282,
+    "equity": 6434.154571611559,
+    "drawdown_nominal": 4884.7956089066,
+    "drawdown_pct": 43.15590696135553
+  },
+  {
+    "timestamp": 1740528000000,
+    "candle_idx": 384,
+    "balance": 6120.403655201282,
+    "equity": 6918.061795502276,
+    "drawdown_nominal": 4400.888385015883,
+    "drawdown_pct": 38.880711681111215
+  },
+  {
+    "timestamp": 1740614400000,
+    "candle_idx": 385,
+    "balance": 6120.403655201282,
+    "equity": 6867.982540759006,
+    "drawdown_nominal": 4450.967639759153,
+    "drawdown_pct": 39.323148956164026
+  },
+  {
+    "timestamp": 1740700800000,
+    "candle_idx": 386,
+    "balance": 6120.403655201282,
+    "equity": 6907.1555301832595,
+    "drawdown_nominal": 4411.794650334899,
+    "drawdown_pct": 38.977065716998645
+  },
+  {
+    "timestamp": 1740787200000,
+    "candle_idx": 387,
+    "balance": 6120.403655201282,
+    "equity": 6719.876877671182,
+    "drawdown_nominal": 4599.073302846977,
+    "drawdown_pct": 40.63162421867326
+  },
+  {
+    "timestamp": 1740873600000,
+    "candle_idx": 388,
+    "balance": 6120.403655201282,
+    "equity": 5823.622166732542,
+    "drawdown_nominal": 5495.328013785617,
+    "drawdown_pct": 48.549802995369774
+  },
+  {
+    "timestamp": 1740960000000,
+    "candle_idx": 389,
+    "balance": 5813.474868799369,
+    "equity": 4959.610346272104,
+    "drawdown_nominal": 6359.339834246055,
+    "drawdown_pct": 56.18312416633445
+  },
+  {
+    "timestamp": 1741046400000,
+    "candle_idx": 390,
+    "balance": 4950.095592425201,
+    "equity": 4827.060829264976,
+    "drawdown_nominal": 6491.889351253183,
+    "drawdown_pct": 57.35416489796757
+  },
+  {
+    "timestamp": 1741132800000,
+    "candle_idx": 391,
+    "balance": 4816.999311883395,
+    "equity": 5197.837372614831,
+    "drawdown_nominal": 6121.112807903328,
+    "drawdown_pct": 54.078449947052555
+  },
+  {
+    "timestamp": 1741219200000,
+    "candle_idx": 392,
+    "balance": 4816.999311883395,
+    "equity": 5120.602644438409,
+    "drawdown_nominal": 6198.34753607975,
+    "drawdown_pct": 54.7607988128454
+  },
+  {
+    "timestamp": 1741305600000,
+    "candle_idx": 393,
+    "balance": 4816.999311883395,
+    "equity": 4761.978791038199,
+    "drawdown_nominal": 6556.97138947996,
+    "drawdown_pct": 57.9291478883406
+  },
+  {
+    "timestamp": 1741392000000,
+    "candle_idx": 394,
+    "balance": 4752.005156159615,
+    "equity": 4818.742297604015,
+    "drawdown_nominal": 6500.207882914144,
+    "drawdown_pct": 57.42765697566289
+  },
+  {
+    "timestamp": 1741478400000,
+    "candle_idx": 395,
+    "balance": 4808.774513548073,
+    "equity": 4172.270985349039,
+    "drawdown_nominal": 7146.67919516912,
+    "drawdown_pct": 63.13906396964069
+  },
+  {
+    "timestamp": 1741564800000,
+    "candle_idx": 396,
+    "balance": 4808.774513548073,
+    "equity": 3924.2486023179817,
+    "drawdown_nominal": 7394.701578200177,
+    "drawdown_pct": 65.33027763411945
+  },
+  {
+    "timestamp": 1741651200000,
+    "candle_idx": 397,
+    "balance": 3914.690865273597,
+    "equity": 3362.864089664805,
+    "drawdown_nominal": 7956.086090853354,
+    "drawdown_pct": 70.28996474025597
+  },
+  {
+    "timestamp": 1741737600000,
+    "candle_idx": 398,
+    "balance": 3352.5881762770005,
+    "equity": 3442.6765717394082,
+    "drawdown_nominal": 7876.273608778751,
+    "drawdown_pct": 69.58484208487073
+  },
+  {
+    "timestamp": 1741824000000,
+    "candle_idx": 399,
+    "balance": 3352.5881762770005,
+    "equity": 3133.4703077424156,
+    "drawdown_nominal": 8185.479872775743,
+    "drawdown_pct": 72.3165995276165
+  },
+  {
+    "timestamp": 1741910400000,
+    "candle_idx": 400,
+    "balance": 3123.5798666766827,
+    "equity": 2770.082680309246,
+    "drawdown_nominal": 8548.867500208913,
+    "drawdown_pct": 75.52703531572186
+  },
+  {
+    "timestamp": 1741996800000,
+    "candle_idx": 401,
+    "balance": 2759.9071651382146,
+    "equity": 2802.207296866957,
+    "drawdown_nominal": 8516.7428836512,
+    "drawdown_pct": 75.24322262951529
+  },
+  {
+    "timestamp": 1742083200000,
+    "candle_idx": 402,
+    "balance": 2759.9071651382146,
+    "equity": 2592.1759798855464,
+    "drawdown_nominal": 8726.774200632612,
+    "drawdown_pct": 77.09879504243138
+  },
+  {
+    "timestamp": 1742169600000,
+    "candle_idx": 403,
+    "balance": 2582.2586553590554,
+    "equity": 2408.4144719475144,
+    "drawdown_nominal": 8910.535708570646,
+    "drawdown_pct": 78.72228048063322
+  },
+  {
+    "timestamp": 1742256000000,
+    "candle_idx": 404,
+    "balance": 2398.328761488646,
+    "equity": 2244.181672843743,
+    "drawdown_nominal": 9074.768507674416,
+    "drawdown_pct": 80.1732348225513
+  },
+  {
+    "timestamp": 1742342400000,
+    "candle_idx": 405,
+    "balance": 2234.2587463880654,
+    "equity": 1734.844069273156,
+    "drawdown_nominal": 9584.106111245002,
+    "drawdown_pct": 84.67310093599389
+  },
+  {
+    "timestamp": 1742428800000,
+    "candle_idx": 406,
+    "balance": 1724.595571509208,
+    "equity": 1422.6194167256742,
+    "drawdown_nominal": 9896.330763792485,
+    "drawdown_pct": 87.43152506162414
+  },
+  {
+    "timestamp": 1742515200000,
+    "candle_idx": 407,
+    "balance": 1412.7692539143604,
+    "equity": 1428.7493772482865,
+    "drawdown_nominal": 9890.200803269872,
+    "drawdown_pct": 87.3773684444039
+  },
+  {
+    "timestamp": 1742601600000,
+    "candle_idx": 408,
+    "balance": 1418.7573673099532,
+    "equity": 1389.2409478205068,
+    "drawdown_nominal": 9929.709232697653,
+    "drawdown_pct": 87.72641520932191
+  },
+  {
+    "timestamp": 1742688000000,
+    "candle_idx": 409,
+    "balance": 1418.7573673099532,
+    "equity": 1655.8531799622706,
+    "drawdown_nominal": 9663.097000555888,
+    "drawdown_pct": 85.3709650316133
+  },
+  {
+    "timestamp": 1742774400000,
+    "candle_idx": 410,
+    "balance": 1418.7573673099532,
+    "equity": 1824.2061792146092,
+    "drawdown_nominal": 9494.74400130355,
+    "drawdown_pct": 83.88360978605262
+  },
+  {
+    "timestamp": 1742860800000,
+    "candle_idx": 411,
+    "balance": 1418.7573673099532,
+    "equity": 1811.6848907051647,
+    "drawdown_nominal": 9507.265289812995,
+    "drawdown_pct": 83.99423213450146
+  },
+  {
+    "timestamp": 1742947200000,
+    "candle_idx": 412,
+    "balance": 1418.7573673099532,
+    "equity": 1754.1623600563116,
+    "drawdown_nominal": 9564.787820461846,
+    "drawdown_pct": 84.50242882881909
+  },
+  {
+    "timestamp": 1743033600000,
+    "candle_idx": 413,
+    "balance": 1418.7573673099532,
+    "equity": 1792.5551113374272,
+    "drawdown_nominal": 9526.395069180731,
+    "drawdown_pct": 84.16323879203284
+  },
+  {
+    "timestamp": 1743120000000,
+    "candle_idx": 414,
+    "balance": 1418.7573673099532,
+    "equity": 1458.6663730168984,
+    "drawdown_nominal": 9860.28380750126,
+    "drawdown_pct": 87.11305951741433
+  },
+  {
+    "timestamp": 1743206400000,
+    "candle_idx": 415,
+    "balance": 1448.6464185140449,
+    "equity": 1658.9932401312142,
+    "drawdown_nominal": 9659.956940386945,
+    "drawdown_pct": 85.34322341142004
+  },
+  {
+    "timestamp": 1743292800000,
+    "candle_idx": 416,
+    "balance": 1448.6464185140449,
+    "equity": 1689.618279959755,
+    "drawdown_nominal": 9629.331900558404,
+    "drawdown_pct": 85.07265909812133
+  },
+  {
+    "timestamp": 1743379200000,
+    "candle_idx": 417,
+    "balance": 1448.6464185140449,
+    "equity": 1670.6640394903563,
+    "drawdown_nominal": 9648.286141027802,
+    "drawdown_pct": 85.2401149148456
+  },
+  {
+    "timestamp": 1743465600000,
+    "candle_idx": 418,
+    "balance": 1448.6464185140449,
+    "equity": 1361.7094460423498,
+    "drawdown_nominal": 9957.240734475808,
+    "drawdown_pct": 87.9696489133234
+  },
+  {
+    "timestamp": 1743552000000,
+    "candle_idx": 419,
+    "balance": 1351.664792471899,
+    "equity": 1041.4121865912061,
+    "drawdown_nominal": 10277.537993926953,
+    "drawdown_pct": 90.7993924349658
+  },
+  {
+    "timestamp": 1743638400000,
+    "candle_idx": 420,
+    "balance": 1031.5661391983203,
+    "equity": 947.1209848602919,
+    "drawdown_nominal": 10371.829195657867,
+    "drawdown_pct": 91.63243083717738
+  },
+  {
+    "timestamp": 1743724800000,
+    "candle_idx": 421,
+    "balance": 937.0787622831228,
+    "equity": 1018.4097163433553,
+    "drawdown_nominal": 10300.540464174803,
+    "drawdown_pct": 91.00261331571004
+  },
+  {
+    "timestamp": 1743811200000,
+    "candle_idx": 422,
+    "balance": 937.0787622831228,
+    "equity": 976.123100139103,
+    "drawdown_nominal": 10342.827080379056,
+    "drawdown_pct": 91.37620464290781
+  },
+  {
+    "timestamp": 1743897600000,
+    "candle_idx": 423,
+    "balance": 937.0787622831228,
+    "equity": 362.2785715919712,
+    "drawdown_nominal": 10956.671608926188,
+    "drawdown_pct": 96.79936243366886
+  },
+  {
+    "timestamp": 1743984000000,
+    "candle_idx": 424,
+    "balance": -10.178782985843782,
+    "equity": -10.178782985843782,
+    "drawdown_nominal": 11329.128963504003,
+    "drawdown_pct": 100.08992691745708
+  }
+]
