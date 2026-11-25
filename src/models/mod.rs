@@ -2,6 +2,9 @@ pub mod model_config;
 pub mod forust_model;
 pub mod forust_strategy;
 pub mod treeboost_model;
+pub mod treeboost_hedge_config;
+pub mod treeboost_mr_indicators;
+pub mod treeboost_signal_decision;
 pub mod treeboost_strategy;
 pub mod decision_tree;
 pub mod random_forest;
@@ -11,11 +14,15 @@ pub mod regularization;
 pub mod validation;
 pub mod meta_labeling;
 pub mod ensemble;
+pub mod hmm;
 
 pub use model_config::ModelConfig;
 pub use forust_model::ForustModel;
 pub use forust_strategy::ForustStrategy;
 pub use treeboost_model::TreeBoostModel;
+pub use treeboost_hedge_config::TreeBoostHedgeConfig;
+pub use treeboost_mr_indicators::TreeBoostMrIndicators;
+pub use treeboost_signal_decision::TreeBoostSignalDecision;
 pub use treeboost_strategy::TreeBoostStrategy;
 pub use decision_tree::{DecisionTreeModel, DecisionTreeStrategy};
 pub use random_forest::{RandomForestModel, RandomForestStrategy};
@@ -35,4 +42,8 @@ pub use meta_labeling::{
 };
 pub use ensemble::{
     EnsembleConfig, RidgeMetaLearner, StackingEnsembleModel,
+};
+pub use hmm::{
+    HmmRegime, RegimePosterior, HmmConfig, HmmFeatureExtractor, GaussianHmm,
+    HmmHedgeStrategyConfig, HmmDualHedgeStrategy,
 };

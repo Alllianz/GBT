@@ -1,16 +1,17 @@
 use rayon::prelude::*;
-use crate::features::{FeatureMatrix, TripleBarrierLabeler};
+use crate::features::{FeatureMatrix, H4FeatureMatrix, TripleBarrierLabeler};
 use crate::models::decision_tree::CartTree;
 use crate::models::model_config::ModelConfig;
 use crate::models::random_forest::TemporalBlockBootstrap;
 use crate::models::regularization::TreeRegularizationConfig;
-use crate::types::Kline;
+use crate::types::{Kline, Timeframe};
 
 pub struct RandomForestModel {
     trees: Vec<CartTree>,
     config: ModelConfig,
     num_trees: usize,
     is_trained: bool,
+    timeframe: Option<Timeframe>,
 }
 
 impl RandomForestModel {
@@ -21,6 +22,31 @@ impl RandomForestModel {
             config,
             num_trees,
             is_trained: false,
+            timeframe: None,
+        }
+    }
+
+    pub fn with_timeframe(mut self, timeframe: Option<Timeframe>) -> Self {
+        self.timeframe = timeframe;
+        self
+    }
+
+    pub fn timeframe(&self) -> Option<Timeframe> {
+        self.timeframe
+    }
+
+    fn build_features(&self, klines: &[Kline]) -> (Vec<f64>, usize, usize, usize) {
+        if matches!(self.timeframe, Some(Timeframe::H4)) {
+            let (matrix_flat, rows) = H4FeatureMatrix::build(klines);
+            (
+                matrix_flat,
+                rows,
+                H4FeatureMatrix::num_features(),
+                H4FeatureMatrix::WARMUP_BARS,
+            )
+        } else {
+            let (matrix_flat, rows) = FeatureMatrix::build(klines);
+            (matrix_flat, rows, FeatureMatrix::num_features(), 35)
         }
     }
 
@@ -30,10 +56,7 @@ impl RandomForestModel {
             return Err("Se requieren al menos 50 velas para entrenar Random Forest".to_string());
         }
 
-        let (matrix_flat, rows) = FeatureMatrix::build(train_klines);
-        let f_dim = FeatureMatrix::num_features();
-
-        let warmup = 35usize;
+        let (matrix_flat, rows, f_dim, warmup) = self.build_features(train_klines);
         let valid_end = rows.saturating_sub(self.config.horizon);
         if valid_end <= warmup || (valid_end - warmup) < 15 {
             return Err("Muestras insuficientes tras descontar warmup y horizonte".to_string());
@@ -65,21 +88,17 @@ impl RandomForestModel {
 
         let max_depth = self.config.max_depth.clamp(2, 3);
         let min_samples_leaf = if valid_rows >= 60 {
-            (valid_rows / 35).clamp(12, 60)
+            (valid_rows / 40).clamp(12, 45)
         } else {
             5
         };
-        let l2_reg = if valid_rows >= 60 {
-            (valid_rows as f64 * 0.015).clamp(5.0, 45.0)
-        } else {
-            5.0
-        };
+        let l2_reg = (valid_rows as f64 * 0.006).clamp(5.0, 25.0);
         let reg_config = TreeRegularizationConfig::from_model_config(&self.config)
             .with_l1((self.config.l1_regularization as f64).max(0.005))
             .with_l2(l2_reg)
             .with_min_child_weight(20.0)
             .with_min_split_gain((self.config.min_split_gain as f64).max(1e-7));
-        let block_size = self.config.horizon.max(30);
+        let block_size = (self.config.horizon * 2).max(36);
         let sample_size = (valid_rows * 60) / 100;
 
         self.trees = (0..self.num_trees)
@@ -120,14 +139,12 @@ impl RandomForestModel {
         Ok(if val.is_finite() { val } else { 0.0 })
     }
 
-    /// Inferencia vectorizada en paralelo evaluando los 100 árboles con los 20 hilos
     pub fn predict_batch(&self, klines: &[Kline]) -> Result<Vec<f64>, String> {
         if !self.is_trained || self.trees.is_empty() {
             return Err("Random Forest no está entrenado".to_string());
         }
 
-        let (matrix_flat, rows) = FeatureMatrix::build(klines);
-        let f_dim = FeatureMatrix::num_features();
+        let (matrix_flat, rows, f_dim, _) = self.build_features(klines);
 
         if rows == 0 || matrix_flat.is_empty() {
             return Ok(Vec::new());
@@ -136,7 +153,6 @@ impl RandomForestModel {
         self.predict_from_matrix(&matrix_flat, f_dim)
     }
 
-    /// Inferencia vectorizada a partir de una matriz plana pre-computada [N x num_features]
     pub fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
         if !self.is_trained || self.trees.is_empty() {
             return Err("Random Forest no está entrenado".to_string());
@@ -247,14 +263,29 @@ mod tests {
         large_model.train_from_matrix(&x_large, &y_large, f_dim).unwrap();
         for tree in &large_model.trees {
             assert_eq!(tree.max_depth, 2);
-            assert_eq!(tree.min_samples_leaf, 22);
+            assert_eq!(tree.min_samples_leaf, 20);
             assert!((tree.regularization.l1_alpha - 0.02f32 as f64).abs() < 1e-12);
-            assert!((tree.regularization.l2_lambda - 12.0).abs() < 1e-12);
+            assert!((tree.regularization.l2_lambda - 5.0).abs() < 1e-12);
             assert!((tree.regularization.min_child_weight - 20.0).abs() < 1e-12);
         }
 
         let preds = large_model.predict_from_matrix(&x_large[0..(10 * f_dim)], f_dim).unwrap();
         assert_eq!(preds.len(), 10);
+        assert!(preds.iter().all(|p| p.is_finite()));
+    }
+
+    #[test]
+    fn test_h4_timeframe_uses_h4_warmup_and_features() {
+        let cfg = ModelConfig::for_timeframe(Timeframe::H4);
+        let mut model_short = RandomForestModel::new(cfg.clone()).with_timeframe(Some(Timeframe::H4));
+        assert_eq!(model_short.timeframe(), Some(Timeframe::H4));
+        assert!(model_short.train(&sample_klines(210)).is_err());
+
+        let mut model_ok = RandomForestModel::new(cfg).with_timeframe(Some(Timeframe::H4));
+        let klines = sample_klines(240);
+        assert!(model_ok.train(&klines).is_ok());
+        let preds = model_ok.predict_batch(&klines).unwrap();
+        assert_eq!(preds.len(), 240);
         assert!(preds.iter().all(|p| p.is_finite()));
     }
 }

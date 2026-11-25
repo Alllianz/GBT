@@ -25,6 +25,7 @@ impl BaselineHandler {
         let slow_p = InputReader::read_with_default("Período EMA Lenta", 21);
 
         let mut bt_cfg = backtest_config.clone();
+        bt_cfg.timeframe = Some(tf);
         bt_cfg.fitness_metric = super::fitness_prompt::FitnessPrompt::prompt_selection(bt_cfg.fitness_metric);
 
         let klines = KlineRepository::load_all(conn, &symbol, tf)?;
@@ -49,16 +50,27 @@ impl BaselineHandler {
         let oos_capital = if is_result.metrics.final_capital > 0.0 {
             is_result.metrics.final_capital
         } else {
-            println!("  ⚠️ ALERTA: Capital IS agotado o insolvente (${:.2}). Reiniciando OOS con capital base (${:.2})", 
-                is_result.metrics.final_capital, bt_cfg.initial_capital);
-            bt_cfg.initial_capital
+            println!(
+                "  ⚠️ ALERTA: Capital IS agotado o insolvente (${:.2}). No se inyecta capital zombi a OOS.",
+                is_result.metrics.final_capital
+            );
+            0.0
         };
-        println!("  -> OOS inicia con el capital: ${:.2}", oos_capital);
-        let mut oos_cfg = bt_cfg.clone();
-        oos_cfg.initial_capital = oos_capital;
-        let engine_oos = BacktestEngine::new(oos_cfg);
-        let mut strategy_oos = EmaCrossoverStrategy::new(fast_p, slow_p);
-        let oos_result = engine_oos.run_with_warmup(&mut strategy_oos, &split.test_warmup_klines, split.warmup_bars)?;
+
+        let oos_result = if oos_capital > 0.0 {
+            println!("  -> OOS inicia con el capital: ${:.2}", oos_capital);
+            let mut oos_cfg = bt_cfg.clone();
+            oos_cfg.initial_capital = oos_capital;
+            let engine_oos = BacktestEngine::new(oos_cfg);
+            let mut strategy_oos = EmaCrossoverStrategy::new(fast_p, slow_p);
+            engine_oos.run_with_warmup(&mut strategy_oos, &split.test_warmup_klines, split.warmup_bars)?
+        } else {
+            crate::backtest::BacktestResult {
+                metrics: crate::backtest::MetricsCalculator::calculate(0.0, &[], &[]),
+                trades: Vec::new(),
+                equity_curve: Vec::new(),
+            }
+        };
 
         let model_name = format!("Baseline_EMA_{}_{}", fast_p, slow_p);
         let wf = WalkForwardResult::new(model_name, tf.as_db_str(), is_result, oos_result, bt_cfg.fitness_metric);

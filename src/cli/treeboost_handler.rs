@@ -2,7 +2,7 @@ use rusqlite::Connection;
 use crate::backtest::{BacktestConfig, BacktestEngine, FullBacktestRunner, WalkForwardResult};
 use crate::features::TrainTestSplit;
 use crate::models::{ModelConfig, TreeBoostModel, TreeBoostStrategy};
-use crate::types::Timeframe;
+use crate::types::{PositionSizing, Timeframe};
 use super::backtest_dataset_helper::{BacktestDatasetBundle, BacktestDatasetHelper};
 use super::backtest_presenter::BacktestPresenter;
 use super::input_reader::InputReader;
@@ -40,10 +40,19 @@ impl TreeBoostHandler {
 
     fn resolve_model_config(tf: Timeframe, m_cfg: &ModelConfig, bt_cfg: &BacktestConfig) -> ModelConfig {
         let mut active = ModelConfig::for_timeframe(tf);
-        let default_comm = ModelConfig::default().commission_rate;
-        if (m_cfg.commission_rate - default_comm).abs() > 1e-12 {
+        let def = ModelConfig::default();
+        if m_cfg.horizon != def.horizon {
+            active.horizon = m_cfg.horizon;
+        }
+        if (m_cfg.long_threshold - def.long_threshold).abs() > 1e-12 {
+            active.long_threshold = m_cfg.long_threshold;
+        }
+        if (m_cfg.short_threshold - def.short_threshold).abs() > 1e-12 {
+            active.short_threshold = m_cfg.short_threshold;
+        }
+        if (m_cfg.commission_rate - def.commission_rate).abs() > 1e-12 {
             active.commission_rate = m_cfg.commission_rate;
-        } else if (bt_cfg.commission_rate - default_comm).abs() > 1e-12 {
+        } else if (bt_cfg.commission_rate - def.commission_rate).abs() > 1e-12 {
             active.commission_rate = bt_cfg.commission_rate;
         }
         active
@@ -70,16 +79,17 @@ impl TreeBoostHandler {
             Some(b) => b,
             None => return Ok(()),
         };
+        bundle.bt_cfg.leverage = 20.0;
+        bundle.bt_cfg.position_sizing = PositionSizing::PercentOfInitialCapital(0.10);
         let active_m_cfg = Self::resolve_model_config(bundle.timeframe, m_cfg, &bundle.bt_cfg);
         Self::ensure_causal_purge(&mut bundle, &active_m_cfg)?;
 
-        // Calibración de umbrales institucional (OOF Purged CV predeterminado o Fallback IS)
         let (model, opt_long, opt_short, best_fit) = ThresholdCalibrationHelper::calibrate_and_train(
             &bundle.split.train_klines,
             &active_m_cfg,
             &bundle.bt_cfg,
             "TreeBoost",
-            || TreeBoostModel::new(active_m_cfg.clone()),
+            || TreeBoostModel::new(active_m_cfg.clone()).with_timeframe(Some(bundle.timeframe)),
         )?;
 
         println!("\n📈 [2/3] Evaluando Backtest In-Sample (IS)...");
@@ -100,12 +110,18 @@ impl TreeBoostHandler {
 
         let oos_result = if oos_capital > 0.0 {
             println!("  -> OOS inicia con el capital: ${:.2}", oos_capital);
-            let mut oos_cfg = bundle.bt_cfg.clone();
-            oos_cfg.initial_capital = oos_capital;
-            let engine_oos = BacktestEngine::new(oos_cfg);
+            let mut oos_bt_cfg = bundle.bt_cfg.clone();
+            oos_bt_cfg.initial_capital = oos_capital;
+            oos_bt_cfg.leverage = 20.0;
+            oos_bt_cfg.position_sizing = PositionSizing::PercentOfInitialCapital(0.10);
+            let engine_oos = BacktestEngine::new(oos_bt_cfg);
             let mut strategy_oos = strategy_is;
             strategy_oos.clear_cache();
-            engine_oos.run_with_warmup(&mut strategy_oos, &bundle.split.test_warmup_klines, bundle.split.warmup_bars)?
+            engine_oos.run_with_warmup(
+                &mut strategy_oos,
+                &bundle.split.test_warmup_klines,
+                bundle.split.warmup_bars,
+            )?
         } else {
             crate::backtest::BacktestResult {
                 metrics: crate::backtest::MetricsCalculator::calculate(0.0, &[], &[]),
@@ -145,6 +161,8 @@ impl TreeBoostHandler {
             Some(b) => b,
             None => return Ok(()),
         };
+        bundle.bt_cfg.leverage = 20.0;
+        bundle.bt_cfg.position_sizing = PositionSizing::PercentOfInitialCapital(0.10);
         let active_m_cfg = Self::resolve_model_config(bundle.timeframe, m_cfg, &bundle.bt_cfg);
         Self::ensure_causal_purge(&mut bundle, &active_m_cfg)?;
 
@@ -154,7 +172,7 @@ impl TreeBoostHandler {
             &active_m_cfg,
             &bundle.bt_cfg,
             "TreeBoost",
-            || TreeBoostModel::new(active_m_cfg.clone()),
+            || TreeBoostModel::new(active_m_cfg.clone()).with_timeframe(Some(bundle.timeframe)),
         )?;
 
         println!("\n🚀 [2/2] Ejecutando Backtest Completo Purged (IS -> Purga/Cuarentena -> OOS)...");

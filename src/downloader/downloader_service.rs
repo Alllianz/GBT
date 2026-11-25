@@ -27,7 +27,6 @@ impl DownloaderService {
         self.sync_timeframe_range(conn, tf, default_start_time, None).await
     }
 
-    /// Sincroniza velas históricas dentro de un rango temporal explícito (BUG-05)
     pub async fn sync_timeframe_range(
         &self,
         conn: &mut Connection,
@@ -50,17 +49,20 @@ impl DownloaderService {
         let mut consecutive_empty_batches = 0;
         const MAX_EMPTY_RETRIES: usize = 5;
 
-        loop {
-            let last_ts = KlineRepository::get_latest_timestamp(conn, &self.symbol, tf)?;
-            let mut cursor_time = match last_ts {
-                Some(ts) => ts + 1,
-                None => {
-                    println!("  [17-Ago-2017] Base de datos vacía para {} en {}. Iniciando histórico desde 2017-08-17 00:00:00 UTC...", self.symbol, tf.as_db_str());
-                    default_ts
-                }
-            };
+        let last_ts = KlineRepository::get_latest_timestamp(conn, &self.symbol, tf)?;
+        let mut cursor_time = match last_ts {
+            Some(ts) => ts + 1,
+            None => {
+                println!(
+                    "  [17-Ago-2017] Base de datos vacía para {} en {}. Iniciando histórico desde 2017-08-17 00:00:00 UTC...",
+                    self.symbol,
+                    tf.as_db_str()
+                );
+                default_ts
+            }
+        };
 
-            // Si el cursor ya alcanzó el límite seguro del presente, concluir sincronización
+        loop {
             if cursor_time >= effective_end_time {
                 break;
             }
@@ -70,7 +72,6 @@ impl DownloaderService {
                 .download_klines(&self.symbol, tf, Some(cursor_time), 1000)
                 .await?;
 
-            // BUG-05: Manejo robusto ante respuestas vacías por huecos temporales o rate limits
             if batch.klines.is_empty() {
                 if cursor_time + (tf_duration * 1000) < effective_end_time {
                     consecutive_empty_batches += 1;
@@ -103,6 +104,12 @@ impl DownloaderService {
             total_downloaded += inserted;
 
             if let Some(last) = batch.klines.last() {
+                cursor_time = if last.timestamp + 1 > cursor_time {
+                    last.timestamp + 1
+                } else {
+                    cursor_time + tf_duration
+                };
+
                 if let Some(date) = Utc.timestamp_millis_opt(last.timestamp).single() {
                     println!(
                         "  [{}] Guardadas {} velas (total lote: {}, crudas: {}). Última fecha: {}",
@@ -114,10 +121,6 @@ impl DownloaderService {
                     );
                 }
 
-                // BUG-05: Prevención de aborto prematuro del bucle.
-                // NO salir si count < 1000 a menos que:
-                // 1) La última vela haya alcanzado el presente (effective_end_time), O
-                // 2) Binance haya devuelto menos de 1000 registros brutos Y la última vela esté dentro del margen final.
                 if last.timestamp + tf_duration >= effective_end_time {
                     break;
                 }
@@ -125,6 +128,8 @@ impl DownloaderService {
                 if batch.raw_count < 1000 && last.timestamp + (tf_duration * 2) >= effective_end_time {
                     break;
                 }
+            } else {
+                cursor_time += tf_duration;
             }
 
             tokio::time::sleep(Duration::from_millis(150)).await;
@@ -156,7 +161,6 @@ mod tests {
 
     #[test]
     fn test_bug05_kline_batch_preserves_raw_count_independent_of_filtered_klines() {
-        // Simular un lote donde Binance devolvió 1000 registros brutos, pero 5 fueron filtrados
         let dummy = Kline {
             timestamp: 1000,
             open: 100.0,
@@ -170,8 +174,6 @@ mod tests {
             raw_count: 1000,
         };
 
-        // El conteo de velas limpias es 995, pero el raw_count es 1000.
-        // El bucle de DownloaderService NO debe abortar basándose en klines.len() < 1000 cuando raw_count == 1000.
         assert_eq!(batch.klines.len(), 995);
         assert_eq!(batch.raw_count, 1000);
         assert!(batch.raw_count >= 1000, "Debe indicar que Binance tenía un bloque completo disponible");

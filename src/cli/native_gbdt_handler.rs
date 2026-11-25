@@ -24,6 +24,7 @@ impl NativeGbdtHandler {
         let tf: Timeframe = tf_str.parse()?;
 
         let mut bt_cfg = bt_cfg.clone();
+        bt_cfg.timeframe = Some(tf);
         bt_cfg.fitness_metric = super::fitness_prompt::FitnessPrompt::prompt_selection(bt_cfg.fitness_metric);
 
         let klines = KlineRepository::load_all(conn, &symbol, tf)?;

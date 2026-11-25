@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use super::trade_regime::TradeRegime;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PositionSide {
@@ -22,6 +23,8 @@ pub struct Position {
     pub entry_commission: f64,
     pub accumulated_funding: f64,
     pub last_funding_timestamp: i64,
+    #[serde(default)]
+    pub regime: TradeRegime,
 }
 
 impl Position {
@@ -53,7 +56,14 @@ impl Position {
             entry_commission,
             accumulated_funding: 0.0,
             last_funding_timestamp: entry_timestamp,
+            regime: TradeRegime::PrimaryTrend,
         }
+    }
+
+    #[inline]
+    pub fn with_regime(mut self, regime: TradeRegime) -> Self {
+        self.regime = regime;
+        self
     }
 
     #[inline]

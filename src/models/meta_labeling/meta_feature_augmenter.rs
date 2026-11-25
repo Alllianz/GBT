@@ -28,7 +28,7 @@ impl MetaFeatureAugmenter {
         let (excess, direction) = if primary_pred > long_th {
             ((primary_pred - long_th).max(0.0), 1.0)
         } else if primary_pred < short_th {
-            ((short_th.abs() - primary_pred.abs()).abs().max(0.0), -1.0)
+            ((short_th - primary_pred).max(0.0), -1.0)
         } else {
             (0.0, 0.0)
         };

@@ -75,7 +75,9 @@ impl MetaLabelingEngine {
             self.config.n_splits,
             self.config.horizon,
             self.config.embargo_bars,
-        );
+        )
+        .with_commission_rate(self.config.commission_rate)
+        .with_timeframe(backtest_config.timeframe);
         let cv_runner = PurgedCvRunner::new(cv_config);
 
         let oof_result = cv_runner.run_cv(train_klines, &primary_factory)?;
@@ -135,8 +137,10 @@ impl MetaLabelingEngine {
         Ok(())
     }
 
-    /// Evalúa de manera causal la señal en el índice `current_idx` aplicando el filtro del Gatekeeper
     pub fn evaluate_signal(&mut self, history: &[Kline], current_idx: usize) -> Signal {
+        if current_idx >= history.len() {
+            return Signal::flat(0);
+        }
         let ts = history[current_idx].timestamp;
 
         if !self.is_trained || current_idx < 35 {
@@ -212,32 +216,61 @@ impl MetaLabelingEngine {
                 return Signal::flat(ts);
             }
 
-            // MODULACIÓN DE INTENSIDAD (Signal Strength):
             let active_th = if direction == SignalDirection::Long {
                 self.long_threshold
             } else {
                 self.short_threshold.abs()
             };
 
-            let primary_conviction = (primary_pred.abs() / (active_th * 3.0)).clamp(0.1, 1.0);
+            let denom = active_th * 3.0;
+            let raw_conviction = if denom.is_finite() && denom > 1e-9 && primary_pred.is_finite() {
+                primary_pred.abs() / denom
+            } else {
+                0.5
+            };
+            let primary_conviction = if raw_conviction.is_finite() {
+                raw_conviction.clamp(0.1, 1.0)
+            } else {
+                0.5
+            };
 
             let strength = if self.config.include_primary_strength {
-                // Escala la intensidad en función de la probabilidad del meta-modelo
-                let prob_factor = win_probability / self.config.confidence_threshold;
-                (primary_conviction * prob_factor).clamp(0.1, 1.0)
-            } else {
+                let conf_th = self.config.confidence_threshold;
+                let prob_factor = if conf_th.is_finite() && conf_th > 1e-9 && win_probability.is_finite() {
+                    win_probability / conf_th
+                } else {
+                    1.0
+                };
+                let raw_strength = primary_conviction * prob_factor;
+                if raw_strength.is_finite() {
+                    raw_strength.clamp(0.1, 1.0)
+                } else {
+                    0.5
+                }
+            } else if win_probability.is_finite() {
                 win_probability.clamp(0.1, 1.0)
+            } else {
+                0.5
             };
 
             Signal::new(direction, strength, ts)
         } else {
-            // Sin Gatekeeper: fallback al dimensionamiento primario estándar
             let active_th = if direction == SignalDirection::Long {
                 self.long_threshold
             } else {
                 self.short_threshold.abs()
             };
-            let strength = (primary_pred.abs() / (active_th * 3.0)).clamp(0.1, 1.0);
+            let denom = active_th * 3.0;
+            let raw_strength = if denom.is_finite() && denom > 1e-9 && primary_pred.is_finite() {
+                primary_pred.abs() / denom
+            } else {
+                0.5
+            };
+            let strength = if raw_strength.is_finite() {
+                raw_strength.clamp(0.1, 1.0)
+            } else {
+                0.5
+            };
             Signal::new(direction, strength, ts)
         }
     }
@@ -282,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_meta_labeling_engine_lifecycle() {
-        let n = 120;
+        let n = 200;
         let mut klines = Vec::with_capacity(n);
         let mut price = 100.0;
 
@@ -320,8 +353,41 @@ mod tests {
         assert!(train_res.is_ok(), "Entrenamiento en 2 etapas debe completarse");
         assert!(engine.is_trained());
 
-        // Evaluar estrategia sin pánico
         let sig = engine.evaluate(&klines, 50);
+        assert!(sig.strength >= 0.0 && sig.strength <= 1.0);
+
+        let oob_sig = engine.evaluate(&klines, klines.len() + 10);
+        assert_eq!(oob_sig.direction, SignalDirection::Flat);
+    }
+
+    #[test]
+    fn test_meta_labeling_zero_threshold_division_guard() {
+        let model_cfg = ModelConfig {
+            num_trees: 3,
+            max_depth: 2,
+            horizon: 5,
+            ..Default::default()
+        };
+        let primary = Box::new(DecisionTreeModel::new(model_cfg));
+        let meta_cfg = MetaLabelConfig::default().with_confidence_threshold(0.5);
+        let mut engine = MetaLabelingEngine::new(meta_cfg, primary);
+        engine.long_threshold = 0.0;
+        engine.short_threshold = 0.0;
+        engine.is_trained = true;
+
+        let klines: Vec<Kline> = (0..60)
+            .map(|i| Kline {
+                timestamp: (i as i64 + 1) * 3600,
+                open: 100.0,
+                high: 101.0,
+                low: 99.0,
+                close: 100.0,
+                volume: 1000.0,
+            })
+            .collect();
+        engine.cached_primary_predictions = Some(vec![0.01; 60]);
+        let sig = engine.evaluate(&klines, 40);
+        assert!(sig.strength.is_finite());
         assert!(sig.strength >= 0.0 && sig.strength <= 1.0);
     }
 }

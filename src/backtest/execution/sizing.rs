@@ -367,6 +367,7 @@ mod tests {
                 exit_reason: "Test".to_string(),
                 entry_candle_idx: 0,
                 exit_candle_idx: 1,
+                regime: crate::types::TradeRegime::PrimaryTrend,
             }
         }
 

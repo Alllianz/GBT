@@ -27,11 +27,11 @@ impl ForustModel {
         }
     }
 
-    /// Entrena el modelo causalmente sobre el conjunto In-Sample de velas
     pub fn train(&mut self, train_klines: &[Kline]) -> Result<(), String> {
+        const WARMUP: usize = 60;
         let n = train_klines.len();
-        if n < 50 {
-            return Err("Se requieren al menos 50 velas para entrenar el modelo Forust".to_string());
+        if n <= WARMUP {
+            return Err("Se requieren más de 60 velas para entrenar el modelo Forust".to_string());
         }
 
         let (matrix_flat, rows) = FeatureMatrix::build(train_klines);
@@ -41,17 +41,15 @@ impl ForustModel {
             return Err("Error construyendo matriz de variables causales".to_string());
         }
 
-        // Generar etiquetas causales (retorno a H velas deduciendo comisiones netas roundtrip)
         let y = TripleBarrierLabeler::label_regression(train_klines, self.config.horizon, self.config.commission_rate);
 
-        // Omitir las últimas `horizon` filas donde la etiqueta no está completa
-        let valid_rows = rows.saturating_sub(self.config.horizon);
-        if valid_rows < 30 {
-            return Err("Muestras válidas insuficientes tras descontar el horizonte de etiqueta".to_string());
+        let valid_end = rows.saturating_sub(self.config.horizon);
+        if valid_end <= WARMUP || (valid_end - WARMUP) < 15 {
+            return Err("Muestras válidas insuficientes tras descontar warmup y horizonte".to_string());
         }
 
-        let x_slice = &matrix_flat[0..(valid_rows * f_dim)];
-        let y_slice = &y[0..valid_rows];
+        let x_slice = &matrix_flat[(WARMUP * f_dim)..(valid_end * f_dim)];
+        let y_slice = &y[WARMUP..valid_end];
 
         self.train_from_matrix(x_slice, y_slice, f_dim)
     }
@@ -122,13 +120,19 @@ impl ForustModel {
         self.predict_from_matrix(&matrix_flat, f_dim)
     }
 
-    /// Inferencia vectorizada a partir de una matriz plana pre-computada [N x num_features]
     pub fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
         if !self.is_trained {
             return Err("El modelo Forust no ha sido entrenado".to_string());
         }
-        if x.is_empty() || num_features == 0 {
+        if x.is_empty() {
             return Ok(Vec::new());
+        }
+        if num_features == 0 || x.len() % num_features != 0 {
+            return Err(format!(
+                "Dimensión inconsistente en predict_from_matrix: {} no es múltiplo de {}",
+                x.len(),
+                num_features
+            ));
         }
 
         let rows = x.len() / num_features;
@@ -151,5 +155,35 @@ impl ForustModel {
 
     pub fn set_thresholds(&mut self, long_th: f64, short_th: f64) {
         self.config.set_thresholds(long_th, short_th);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_klines(n: usize) -> Vec<Kline> {
+        (0..n)
+            .map(|i| {
+                let p = 100.0 + (i as f64 * 0.1).sin() * 2.0;
+                Kline {
+                    timestamp: (i as i64 + 1) * 3600,
+                    open: p,
+                    high: p + 0.5,
+                    low: p - 0.5,
+                    close: p + 0.1,
+                    volume: 1000.0,
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_forust_model_warmup_and_predict_matrix_validation() {
+        let mut model = ForustModel::new(ModelConfig::default());
+        assert!(model.train(&sample_klines(60)).is_err());
+        assert!(model.train(&sample_klines(90)).is_ok());
+        let f_dim = FeatureMatrix::num_features();
+        assert!(model.predict_from_matrix(&vec![0.0; f_dim + 1], f_dim).is_err());
     }
 }

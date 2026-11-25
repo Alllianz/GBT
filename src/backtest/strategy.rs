@@ -1,4 +1,4 @@
-use crate::types::{Kline, Signal};
+use crate::types::{HedgeSignal, Kline, Signal};
 
 /// Trait institucional para cualquier estrategia o modelo de decisión.
 /// REGLA FINANCIERA FUNDAMENTAL:
@@ -8,6 +8,10 @@ pub trait Strategy: Send + Sync {
 
     /// Genera una señal basada exclusivamente en la información disponible hasta current_idx
     fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal;
+
+    fn evaluate_hedge(&mut self, history: &[Kline], current_idx: usize) -> HedgeSignal {
+        HedgeSignal::from_net_signal(self.evaluate(history, current_idx))
+    }
 
     /// Limpia cualquier caché interno de predicciones o estado entre ejecuciones de backtest (ej. IS vs OOS)
     fn clear_cache(&mut self) {}

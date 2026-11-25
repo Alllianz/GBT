@@ -23,20 +23,20 @@ pub struct RidgeMetaLearner {
 
 impl RidgeMetaLearner {
     pub fn new(lambda: f64, non_negative: bool) -> Self {
+        let safe_lambda = if lambda.is_finite() {
+            lambda.max(1e-6)
+        } else {
+            1.0
+        };
         Self {
             weights: Vec::new(),
-            lambda: lambda.max(1e-6),
+            lambda: safe_lambda,
             non_negative,
             num_models: 0,
             is_fitted: false,
         }
     }
 
-    /// Ajusta analíticamente los pesos del ensamble sobre la matriz OOF y las etiquetas reales.
-    ///
-    /// - `oof_predictions_flat`: Matriz plana `(N x M)` con las predicciones fuera de muestra de cada modelo base.
-    /// - `targets`: Vector de retornos reales $y \in \mathbb{R}^N$.
-    /// - `num_models`: Número de estimadores base $M$.
     pub fn fit(
         &mut self,
         oof_predictions_flat: &[f64],
@@ -55,10 +55,15 @@ impl RidgeMetaLearner {
                 num_models
             ));
         }
+        if oof_predictions_flat.iter().any(|v| !v.is_finite()) {
+            return Err("Predicciones OOF contienen NaN o Inf en RidgeMetaLearner".to_string());
+        }
+        if targets.iter().any(|v| !v.is_finite()) {
+            return Err("Targets contienen NaN o Inf en RidgeMetaLearner".to_string());
+        }
 
         self.num_models = num_models;
 
-        // 1. Calcular matriz normal A = P^T P + \lambda I (dimensión M x M)
         let mut a = vec![0.0; num_models * num_models];
         for j in 0..num_models {
             for k in 0..num_models {
@@ -75,7 +80,6 @@ impl RidgeMetaLearner {
             }
         }
 
-        // 2. Calcular vector de correlación cruzada b = P^T y (dimensión M)
         let mut b = vec![0.0; num_models];
         for j in 0..num_models {
             let mut sum = 0.0;
@@ -86,10 +90,12 @@ impl RidgeMetaLearner {
             b[j] = sum;
         }
 
-        // 3. Resolver A w = b mediante Descomposición de Cholesky
+        if a.iter().any(|v| !v.is_finite()) || b.iter().any(|v| !v.is_finite()) {
+            return Err("Sistema normal contiene valores no finitos en RidgeMetaLearner".to_string());
+        }
+
         let raw_weights = Self::solve_cholesky(&a, &b, num_models)?;
 
-        // 4. Proyección simplex si non_negative está activo
         if self.non_negative {
             self.weights = Self::project_to_simplex(&raw_weights);
         } else {
@@ -100,11 +106,9 @@ impl RidgeMetaLearner {
         Ok(())
     }
 
-    /// Resuelve el sistema lineal simétrico definido positivo A w = b mediante Cholesky (A = L L^T)
-    fn solve_cholesky(a: &[f64], b: &[f64], m: usize) -> Result<Vec<f64>, String> {
+    fn try_cholesky(a: &[f64], b: &[f64], m: usize) -> Option<Vec<f64>> {
         let mut l = vec![0.0; m * m];
 
-        // Factorización Cholesky: A = L L^T
         for j in 0..m {
             let mut sum_diag = 0.0;
             for k in 0..j {
@@ -113,12 +117,10 @@ impl RidgeMetaLearner {
             }
 
             let diag_val = a[j * m + j] - sum_diag;
-            let l_jj = if diag_val > 1e-12 {
-                diag_val.sqrt()
-            } else {
-                // Regularización estocástica adicional ante cuasi-singularidad
-                1e-6
-            };
+            if !diag_val.is_finite() || diag_val <= 1e-12 {
+                return None;
+            }
+            let l_jj = diag_val.sqrt();
             l[j * m + j] = l_jj;
 
             for i in (j + 1)..m {
@@ -126,36 +128,65 @@ impl RidgeMetaLearner {
                 for k in 0..j {
                     sum_off += l[i * m + k] * l[j * m + k];
                 }
-                l[i * m + j] = (a[i * m + j] - sum_off) / l_jj;
+                let val = (a[i * m + j] - sum_off) / l_jj;
+                if !val.is_finite() {
+                    return None;
+                }
+                l[i * m + j] = val;
             }
         }
 
-        // Sustitución hacia adelante: L z = b
         let mut z = vec![0.0; m];
         for i in 0..m {
             let mut sum = 0.0;
             for k in 0..i {
                 sum += l[i * m + k] * z[k];
             }
-            z[i] = (b[i] - sum) / l[i * m + i];
+            let zi = (b[i] - sum) / l[i * m + i];
+            if !zi.is_finite() {
+                return None;
+            }
+            z[i] = zi;
         }
 
-        // Sustitución hacia atrás: L^T w = z
         let mut w = vec![0.0; m];
         for i in (0..m).rev() {
             let mut sum = 0.0;
             for k in (i + 1)..m {
                 sum += l[k * m + i] * w[k];
             }
-            w[i] = (z[i] - sum) / l[i * m + i];
+            let wi = (z[i] - sum) / l[i * m + i];
+            if !wi.is_finite() {
+                return None;
+            }
+            w[i] = wi;
         }
 
-        Ok(w)
+        Some(w)
     }
 
-    /// Proyección Euclídea exacta sobre el Simplex Unitario $\sum w_m = 1, w_m \ge 0$
-    ///
-    /// Algoritmo exacto de Wang & Carreira-Perpiñán (2013) / Held et al. O(M log M).
+    fn solve_cholesky(a: &[f64], b: &[f64], m: usize) -> Result<Vec<f64>, String> {
+        if let Some(w) = Self::try_cholesky(a, b, m) {
+            return Ok(w);
+        }
+
+        let mean_diag = (0..m).map(|i| a[i * m + i].abs()).sum::<f64>() / (m as f64).max(1.0);
+        let base_jitter = (mean_diag * 1e-8).max(1e-10);
+
+        for exp in 0..12 {
+            let jitter = base_jitter * 10.0_f64.powi(exp);
+            let mut a_reg = a.to_vec();
+            for j in 0..m {
+                a_reg[j * m + j] += jitter;
+            }
+            if let Some(w) = Self::try_cholesky(&a_reg, b, m) {
+                return Ok(w);
+            }
+        }
+
+        Err("Matriz normal no definida positiva tras jitter adaptativo en Cholesky".to_string())
+    }
+
     pub fn project_to_simplex(v: &[f64]) -> Vec<f64> {
         let m = v.len();
         if m == 0 {
@@ -164,12 +195,13 @@ impl RidgeMetaLearner {
         if m == 1 {
             return vec![1.0];
         }
+        if v.iter().any(|x| !x.is_finite()) {
+            return vec![1.0 / m as f64; m];
+        }
 
-        // Ordenar v en orden descendente
         let mut u = v.to_vec();
         u.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
 
-        // Encontrar rho
         let mut cum_sum = 0.0;
         let mut rho = 0;
         for (j, &val) in u.iter().enumerate() {
@@ -180,21 +212,21 @@ impl RidgeMetaLearner {
             }
         }
 
-        // Calcular theta
+        if rho == 0 {
+            return vec![1.0 / m as f64; m];
+        }
+
         let sum_rho: f64 = u.iter().take(rho).sum();
         let theta = (1.0 - sum_rho) / (rho as f64);
 
-        // Proyectar: w_i = max(v_i + theta, 0.0)
         let mut projected: Vec<f64> = v.iter().map(|&x| (x + theta).max(0.0)).collect();
 
-        // Normalización final por estabilidad de redondeo en punto flotante
         let sum_proj: f64 = projected.iter().sum();
-        if sum_proj > 1e-12 {
+        if sum_proj.is_finite() && sum_proj > 1e-12 {
             for val in &mut projected {
                 *val /= sum_proj;
             }
         } else {
-            // Fallback a pesos uniformes si la suma degeneró a cero
             let uniform = 1.0 / m as f64;
             projected = vec![uniform; m];
         }
@@ -202,36 +234,61 @@ impl RidgeMetaLearner {
         projected
     }
 
-    /// Combina las predicciones puntuales de los $M$ modelos base ponderadas por $w^*$
     pub fn predict(&self, model_predictions: &[f64]) -> f64 {
         if !self.is_fitted || self.weights.is_empty() {
             if model_predictions.is_empty() {
                 return 0.0;
             }
-            return model_predictions.iter().sum::<f64>() / model_predictions.len() as f64;
+            let mut sum = 0.0;
+            let mut count = 0usize;
+            for &p in model_predictions {
+                if p.is_finite() {
+                    sum += p;
+                    count += 1;
+                }
+            }
+            if count == 0 {
+                return 0.0;
+            }
+            let avg = sum / count as f64;
+            return if avg.is_finite() { avg } else { 0.0 };
         }
 
         let m = self.weights.len().min(model_predictions.len());
         let mut blended = 0.0;
         for i in 0..m {
-            blended += self.weights[i] * model_predictions[i];
+            let p = model_predictions[i];
+            let w = self.weights[i];
+            if p.is_finite() && w.is_finite() {
+                blended += w * p;
+            }
         }
 
-        blended
+        if blended.is_finite() {
+            blended
+        } else {
+            0.0
+        }
     }
 
-    /// Inferencia vectorizada en batch
     pub fn predict_batch(
         &self,
         predictions_matrix_flat: &[f64],
         num_samples: usize,
     ) -> Vec<f64> {
-        let mut output = Vec::with_capacity(num_samples);
         let m = self.num_models;
+        if !self.is_fitted || m == 0 {
+            return vec![0.0; num_samples];
+        }
 
+        let mut output = Vec::with_capacity(num_samples);
         for i in 0..num_samples {
-            let row = &predictions_matrix_flat[(i * m)..((i + 1) * m)];
-            output.push(self.predict(row));
+            let val = i
+                .checked_mul(m)
+                .and_then(|start| start.checked_add(m).map(|end| (start, end)))
+                .and_then(|(start, end)| predictions_matrix_flat.get(start..end))
+                .map_or(0.0, |row| self.predict(row));
+            output.push(val);
         }
 
         output
@@ -305,5 +362,25 @@ mod tests {
         );
         let sum_w: f64 = w.iter().sum();
         assert!((sum_w - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_ridge_rejects_nan_and_inf() {
+        let mut learner = RidgeMetaLearner::new(0.01, true);
+        assert!(learner.fit(&[f64::NAN, 0.1], &[0.1], 2).is_err());
+        assert!(learner.fit(&[0.1, f64::INFINITY], &[0.1], 2).is_err());
+        assert!(learner.fit(&[0.1, 0.2], &[f64::NEG_INFINITY], 2).is_err());
+    }
+
+    #[test]
+    fn test_ridge_adaptive_jitter_and_simplex_guard() {
+        let p_uniform = RidgeMetaLearner::project_to_simplex(&[f64::NAN, 1.0, 2.0]);
+        assert_eq!(p_uniform.len(), 3);
+        assert!((p_uniform.iter().sum::<f64>() - 1.0).abs() < 1e-9);
+
+        let a = vec![1.0, 2.0, 2.0, 1.0];
+        let b = vec![1.0, 1.0];
+        let w = RidgeMetaLearner::solve_cholesky(&a, &b, 2).expect("adaptive jitter solves non-PD");
+        assert!(w.iter().all(|v| v.is_finite()));
     }
 }

@@ -83,11 +83,13 @@ impl StackingEnsembleModel {
             self.config.n_splits,
             self.config.horizon,
             self.config.embargo_bars,
-        );
+        )
+        .with_commission_rate(self.config.commission_rate)
+        .with_timeframe(backtest_config.timeframe);
         let cv_runner = PurgedCvRunner::new(cv_config);
 
-        // 1. Generar predicciones OOF para cada modelo base
         let mut model_oof_list = Vec::with_capacity(num_models);
+        let mut warmup_bars = 60usize;
         self.base_models.clear();
 
         for (m_idx, factory) in model_factories.iter().enumerate() {
@@ -104,38 +106,53 @@ impl StackingEnsembleModel {
                 ));
             }
 
+            warmup_bars = oof_result.warmup_bars;
             model_oof_list.push(oof_result.predictions);
 
-            // Re-entrenar el estimador base final en el 100% de la serie In-Sample
             let mut full_model = factory();
             full_model.train(train_klines)?;
             self.base_models.push(full_model);
         }
 
-        // 2. Construir la matriz plana P_OOF (N x M)
-        let mut p_oof_flat = vec![0.0; n_samples * num_models];
-        for i in 0..n_samples {
+        let valid_start = warmup_bars.min(n_samples);
+        let valid_end = n_samples.saturating_sub(self.config.horizon);
+        if valid_end <= valid_start {
+            return Err(format!(
+                "Muestras insuficientes tras warmup ({}) y horizonte ({}) en Stacking Ensemble",
+                valid_start, self.config.horizon
+            ));
+        }
+
+        let valid_len = valid_end - valid_start;
+        let mut p_oof_valid_flat = Vec::with_capacity(valid_len * num_models);
+        for i in valid_start..valid_end {
             for m in 0..num_models {
-                p_oof_flat[i * num_models + m] = model_oof_list[m][i];
+                p_oof_valid_flat.push(model_oof_list[m][i]);
             }
         }
 
-        // 3. Obtener el vector objetivo causal de retornos
         let targets = TripleBarrierLabeler::label_regression(
             train_klines,
             self.config.horizon,
             self.config.commission_rate,
         );
+        let valid_targets = &targets[valid_start..valid_end];
 
-        // 4. Ajustar analíticamente el RidgeMetaLearner con proyección simplex
         let mut meta = RidgeMetaLearner::new(
             self.config.ridge_lambda,
             self.config.non_negative_weights,
         );
-        meta.fit(&p_oof_flat, &targets, num_models)?;
+        meta.fit(&p_oof_valid_flat, valid_targets, num_models)?;
 
-        // 5. Blended OOF predictions del ensamble: P_blended = P_OOF * w*
-        let blended_oof = meta.predict_batch(&p_oof_flat, n_samples);
+        let mut blended_oof = vec![0.0; n_samples];
+        let weights = meta.weights();
+        for i in valid_start..n_samples {
+            let mut sum = 0.0;
+            for m in 0..num_models {
+                sum += weights[m] * model_oof_list[m][i];
+            }
+            blended_oof[i] = if sum.is_finite() { sum } else { 0.0 };
+        }
 
         // 6. Calibrar umbrales óptimos libres de sesgo sobre las predicciones ensambladas OOF
         let (opt_long, opt_short, _score) = OofCalibrator::calibrate_symmetric(
@@ -234,7 +251,8 @@ impl TrainableModel for StackingEnsembleModel {
                     } else {
                         0.0
                     };
-                    sum += weights[m] * pred;
+                    let w = weights.get(m).copied().unwrap_or(0.0);
+                    sum += w * pred;
                 }
                 if sum.is_finite() { sum } else { 0.0 }
             })
@@ -295,7 +313,9 @@ impl TrainableModel for StackingEnsembleModel {
             .map(|i| {
                 let mut sum = 0.0;
                 for m in 0..num_models {
-                    sum += weights[m] * all_model_preds[m][i];
+                    let pred = all_model_preds[m].get(i).copied().unwrap_or(0.0);
+                    let w = weights.get(m).copied().unwrap_or(0.0);
+                    sum += w * pred;
                 }
                 if sum.is_finite() { sum } else { 0.0 }
             })
@@ -311,6 +331,9 @@ impl Strategy for StackingEnsembleModel {
     }
 
     fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal {
+        if current_idx >= history.len() {
+            return Signal::flat(0);
+        }
         let ts = history[current_idx].timestamp;
 
         if !self.is_trained || current_idx < 35 {
@@ -414,9 +437,11 @@ mod tests {
         let preds = ensemble.predict_batch(&klines).expect("predict_batch exitoso");
         assert_eq!(preds.len(), n);
 
-        // Inferencia mediante Strategy
         let sig = ensemble.evaluate(&klines, 40);
         assert!(sig.strength >= 0.0 && sig.strength <= 1.0);
+
+        let oob_sig = ensemble.evaluate(&klines, klines.len() + 5);
+        assert_eq!(oob_sig.direction, SignalDirection::Flat);
     }
 
     #[test]

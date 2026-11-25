@@ -113,6 +113,7 @@ impl TradeAccounting {
             exit_reason: reason,
             entry_candle_idx: pos.entry_candle_idx,
             exit_candle_idx: candle_idx,
+            regime: pos.regime,
         }
     }
 }

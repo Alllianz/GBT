@@ -14,6 +14,7 @@ pub mod purged_pipeline_runner;
 pub mod report;
 pub mod robustness;
 pub mod sharpe;
+pub mod stagnation_metric;
 pub mod strategy;
 pub mod walk_forward_result;
 
@@ -32,5 +33,6 @@ pub use purged_pipeline_runner::{PurgedPipelineResult, PurgedPipelineRunner};
 pub use report::BacktestReport;
 pub use robustness::RobustnessCalculator;
 pub use sharpe::SharpeSortinoCalculator;
+pub use stagnation_metric::max_stagnation_ratio;
 pub use strategy::Strategy;
 pub use walk_forward_result::{WalkForwardMetrics, WalkForwardResult};

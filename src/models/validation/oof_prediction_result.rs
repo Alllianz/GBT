@@ -13,4 +13,5 @@ pub struct OofPredictionResult {
     pub num_folds: usize,
     /// Cantidad de predicciones efectivamente asignadas fuera de muestra
     pub valid_predictions_count: usize,
+    pub warmup_bars: usize,
 }

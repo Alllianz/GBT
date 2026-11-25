@@ -24,7 +24,7 @@ impl ExitEvaluator {
                 let sl_before_liq = valid_sl.is_some_and(|sl| {
                     pos.liquidation_price.is_finite()
                         && pos.liquidation_price > 0.0
-                        && current_candle.open > sl
+                        && current_candle.open > pos.liquidation_price
                         && sl > pos.liquidation_price
                 });
 
@@ -32,7 +32,7 @@ impl ExitEvaluator {
                     && pos.liquidation_price.is_finite()
                     && pos.liquidation_price > 0.0
                     && current_candle.low.is_finite()
-                    && current_candle.low > 0.0
+                    && current_candle.low >= 0.0
                     && current_candle.low <= pos.liquidation_price
                 {
                     let liq_target = pos.liquidation_price.min(current_candle.open).max(0.00000001);
@@ -43,7 +43,7 @@ impl ExitEvaluator {
                 let sl_before_liq = valid_sl.is_some_and(|sl| {
                     pos.liquidation_price.is_finite()
                         && pos.liquidation_price > 0.0
-                        && current_candle.open < sl
+                        && current_candle.open < pos.liquidation_price
                         && sl < pos.liquidation_price
                 });
 
@@ -62,10 +62,16 @@ impl ExitEvaluator {
 
         match pos.side {
             PositionSide::Long => {
+                if valid_sl.is_some_and(|sl| current_candle.open <= sl) {
+                    return Some((current_candle.open, "Stop Loss"));
+                }
+                if valid_tp.is_some_and(|tp| current_candle.open >= tp) {
+                    return Some((current_candle.open, "Take Profit"));
+                }
+
                 let hit_sl = valid_sl.is_some_and(|sl| current_candle.low.is_finite() && current_candle.low <= sl);
                 let hit_tp = valid_tp.is_some_and(|tp| current_candle.high.is_finite() && current_candle.high >= tp);
 
-                // Prevención de Gap Risk Look-Ahead: si la vela abre por debajo del Stop Loss, se ejecuta en Open
                 let sl_exec = valid_sl.map(|sl| sl.min(current_candle.open));
                 let tp_exec = valid_tp.map(|tp| tp.max(current_candle.open));
 
@@ -80,10 +86,16 @@ impl ExitEvaluator {
                 }
             }
             PositionSide::Short => {
+                if valid_sl.is_some_and(|sl| current_candle.open >= sl) {
+                    return Some((current_candle.open, "Stop Loss"));
+                }
+                if valid_tp.is_some_and(|tp| current_candle.open <= tp) {
+                    return Some((current_candle.open, "Take Profit"));
+                }
+
                 let hit_sl = valid_sl.is_some_and(|sl| current_candle.high.is_finite() && current_candle.high >= sl);
                 let hit_tp = valid_tp.is_some_and(|tp| current_candle.low.is_finite() && current_candle.low <= tp);
 
-                // Prevención de Gap Risk Look-Ahead: si la vela abre por encima del Stop Loss, se ejecuta en Open
                 let sl_exec = valid_sl.map(|sl| sl.max(current_candle.open));
                 let tp_exec = valid_tp.map(|tp| tp.min(current_candle.open));
 
@@ -323,5 +335,79 @@ mod tests {
             .expect("Debe liquidar si liq_price es alcanzado antes de SL");
         assert_eq!(p_lf, 90.0);
         assert_eq!(r_lf, "Liquidated (Margin Call)");
+    }
+
+    #[test]
+    fn test_gap_past_sl_above_liq_triggers_sl_at_open() {
+        let pos_long = dummy_position(PositionSide::Long, 100.0, Some(95.0), Some(110.0), 80.0);
+        let candle_long_gap = Kline {
+            timestamp: 5000,
+            open: 88.0,
+            high: 90.0,
+            low: 75.0,
+            close: 78.0,
+            volume: 10.0,
+        };
+        let (p_l, r_l) = ExitEvaluator::evaluate_intra_candle(&pos_long, &candle_long_gap).unwrap();
+        assert_eq!(p_l, 88.0);
+        assert_eq!(r_l, "Stop Loss");
+
+        let pos_short = dummy_position(PositionSide::Short, 100.0, Some(105.0), Some(90.0), 120.0);
+        let candle_short_gap = Kline {
+            timestamp: 5100,
+            open: 112.0,
+            high: 125.0,
+            low: 110.0,
+            close: 124.0,
+            volume: 10.0,
+        };
+        let (p_s, r_s) = ExitEvaluator::evaluate_intra_candle(&pos_short, &candle_short_gap).unwrap();
+        assert_eq!(p_s, 112.0);
+        assert_eq!(r_s, "Stop Loss");
+    }
+
+    #[test]
+    fn test_long_liquidation_when_low_is_zero() {
+        let pos = dummy_position(PositionSide::Long, 100.0, None, None, 50.0);
+        let candle_zero_low = Kline {
+            timestamp: 6000,
+            open: 60.0,
+            high: 62.0,
+            low: 0.0,
+            close: 10.0,
+            volume: 10.0,
+        };
+        let (p, r) = ExitEvaluator::evaluate_intra_candle(&pos, &candle_zero_low).unwrap();
+        assert_eq!(p, 50.0);
+        assert_eq!(r, "Liquidated (Margin Call)");
+    }
+
+    #[test]
+    fn test_open_gap_tp_precedes_ambiguous_intrabar_sl_and_tp() {
+        let pos_long = dummy_position(PositionSide::Long, 100.0, Some(95.0), Some(105.0), 80.0);
+        let candle_long_gap_tp = Kline {
+            timestamp: 7000,
+            open: 108.0,
+            high: 110.0,
+            low: 90.0,
+            close: 92.0,
+            volume: 10.0,
+        };
+        let (p_l, r_l) = ExitEvaluator::evaluate_intra_candle(&pos_long, &candle_long_gap_tp).unwrap();
+        assert_eq!(p_l, 108.0);
+        assert_eq!(r_l, "Take Profit");
+
+        let pos_short = dummy_position(PositionSide::Short, 100.0, Some(105.0), Some(95.0), 120.0);
+        let candle_short_gap_tp = Kline {
+            timestamp: 7100,
+            open: 92.0,
+            high: 108.0,
+            low: 90.0,
+            close: 106.0,
+            volume: 10.0,
+        };
+        let (p_s, r_s) = ExitEvaluator::evaluate_intra_candle(&pos_short, &candle_short_gap_tp).unwrap();
+        assert_eq!(p_s, 92.0);
+        assert_eq!(r_s, "Take Profit");
     }
 }

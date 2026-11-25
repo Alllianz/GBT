@@ -169,8 +169,11 @@ pub fn render_charts_containers() -> &'static str {
     <!-- Gráfico 1: Curva de Balance Continua IS + OOS -->
     <div class="chart-box">
         <div class="chart-header">
-            <div class="chart-title">📈 Curva de Balance Continua: In-Sample (Morado) ➔ Purga (Ámbar) ➔ Out-of-Sample (Azul)</div>
-            <div class="chart-legend-custom">Línea continua sin fugas temporales (t &le; T)</div>
+            <div class="chart-title">📈 Curva de Balance Continua: In-Sample (Azul Claro) ➔ Purga (Ámbar) ➔ Out-of-Sample (Azul Francia)</div>
+            <div class="chart-controls">
+                <div class="chart-legend-custom">Línea continua sin fugas temporales (t &le; T)</div>
+                <button id="equityScaleToggle" class="scale-toggle-btn" type="button" aria-pressed="false" onclick="toggleEquityScale()">Escala Log</button>
+            </div>
         </div>
         <div class="chart-wrapper">
             <canvas id="equityChart"></canvas>
@@ -243,7 +246,7 @@ pub fn render_charts_script(series: &TimelineSeries) -> String {
 
         // Gráfico 1: Curva de Balance
         const ctxEquity = document.getElementById('equityChart').getContext('2d');
-        new Chart(ctxEquity, {{
+        const equityChart = new Chart(ctxEquity, {{
             type: 'line',
             data: {{
                 labels: labels,
@@ -251,8 +254,8 @@ pub fn render_charts_script(series: &TimelineSeries) -> String {
                     {{
                         label: 'In-Sample (IS - Entrenamiento)',
                         data: [{is_eq_str}],
-                        borderColor: '#a371f7',
-                        backgroundColor: 'rgba(163, 113, 247, 0.08)',
+                        borderColor: '#60a5fa',
+                        backgroundColor: 'rgba(96, 165, 250, 0.07)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.05,
@@ -261,8 +264,8 @@ pub fn render_charts_script(series: &TimelineSeries) -> String {
                     {{
                         label: 'Out-of-Sample (OOS - Validación Ciega)',
                         data: [{oos_eq_str}],
-                        borderColor: '#2f81f7',
-                        backgroundColor: 'rgba(47, 129, 247, 0.12)',
+                        borderColor: '#0055FF',
+                        backgroundColor: 'rgba(0, 85, 255, 0.16)',
                         borderWidth: 2.5,
                         fill: true,
                         tension: 0.05,
@@ -275,14 +278,53 @@ pub fn render_charts_script(series: &TimelineSeries) -> String {
                 maintainAspectRatio: false,
                 interaction: {{ mode: 'index', intersect: false }},
                 plugins: {{
-                    legend: {{ labels: {{ color: '#8b949e', font: {{ size: 12 }} }} }}
+                    legend: {{ labels: {{ color: '#8a94a6', font: {{ size: 12 }} }} }}
                 }},
                 scales: {{
-                    x: {{ ticks: {{ color: '#8b949e', maxTicksLimit: 14 }}, grid: {{ color: '#1f2430' }} }},
-                    y: {{ ticks: {{ color: '#8b949e' }}, grid: {{ color: '#1f2430' }} }}
+                    x: {{ ticks: {{ color: '#8a94a6', maxTicksLimit: 14 }}, grid: {{ color: '#121826' }} }},
+                    y: {{ ticks: {{ color: '#8a94a6' }}, grid: {{ color: '#121826' }} }}
                 }}
             }}
         }});
+
+        const rawEquityDatasets = equityChart.data.datasets.map(ds => ds.data.slice());
+        let equityScaleMode = 'linear';
+        const hasPositiveEquity = rawEquityDatasets.some(arr => arr.some(v => v !== null && Number.isFinite(v) && v > 0));
+        const scaleToggleBtn = document.getElementById('equityScaleToggle');
+        if (scaleToggleBtn && !hasPositiveEquity) {{
+            scaleToggleBtn.disabled = true;
+            scaleToggleBtn.title = 'Escala logarítmica no disponible sin valores positivos';
+        }}
+
+        function toggleEquityScale() {{
+            if (!hasPositiveEquity) return;
+            const toLog = equityScaleMode === 'linear';
+            equityScaleMode = toLog ? 'logarithmic' : 'linear';
+
+            equityChart.data.datasets.forEach((ds, idx) => {{
+                const raw = rawEquityDatasets[idx];
+                ds.data = toLog ? raw.map(v => (v !== null && Number.isFinite(v) && v > 0) ? v : null) : raw.slice();
+                ds.fill = toLog ? 'start' : true;
+            }});
+
+            equityChart.options.scales.y.type = equityScaleMode;
+            equityChart.options.scales.y.ticks = toLog
+                ? {{
+                    color: '#8a94a6',
+                    callback: function(value) {{
+                        return Number(value).toLocaleString('en-US', {{ maximumFractionDigits: 2 }});
+                    }}
+                }}
+                : {{ color: '#8a94a6' }};
+
+            equityChart.update();
+
+            if (scaleToggleBtn) {{
+                scaleToggleBtn.textContent = toLog ? 'Escala Lineal' : 'Escala Log';
+                scaleToggleBtn.classList.toggle('active', toLog);
+                scaleToggleBtn.setAttribute('aria-pressed', toLog ? 'true' : 'false');
+            }}
+        }}
 
         // Gráfico 2: Drawdown Submarino
         const ctxDd = document.getElementById('ddChart').getContext('2d');
@@ -314,10 +356,10 @@ pub fn render_charts_script(series: &TimelineSeries) -> String {
             options: {{
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {{ legend: {{ labels: {{ color: '#8b949e' }} }} }},
+                plugins: {{ legend: {{ labels: {{ color: '#8a94a6' }} }} }},
                 scales: {{
-                    x: {{ ticks: {{ color: '#8b949e', maxTicksLimit: 14 }}, grid: {{ color: '#1f2430' }} }},
-                    y: {{ ticks: {{ color: '#8b949e' }}, grid: {{ color: '#1f2430' }} }}
+                    x: {{ ticks: {{ color: '#8a94a6', maxTicksLimit: 14 }}, grid: {{ color: '#121826' }} }},
+                    y: {{ ticks: {{ color: '#8a94a6' }}, grid: {{ color: '#121826' }} }}
                 }}
             }}
         }});
@@ -382,5 +424,9 @@ mod tests {
         assert!(series.purge_dd.is_some());
         let script = render_charts_script(&series);
         assert!(script.contains("Purga / Embargo"));
+        assert!(script.contains("toggleEquityScale"));
+        assert!(script.contains("'logarithmic'"));
+        let containers = render_charts_containers();
+        assert!(containers.contains("equityScaleToggle"));
     }
 }

@@ -1,6 +1,7 @@
 use crate::backtest::BacktestConfig;
+use crate::features::H4FeatureMatrix;
 use crate::models::OofCalibrator;
-use crate::types::{FitnessMetric, Kline};
+use crate::types::{FitnessMetric, Kline, Timeframe};
 use super::purged_cv_config::PurgedCvConfig;
 use super::purged_cv_runner::PurgedCvRunner;
 use super::trainable_model::TrainableModel;
@@ -46,20 +47,27 @@ impl OofCalibrationPipeline {
         M: TrainableModel,
         F: Fn() -> M,
     {
-        if train_klines.len() < 50 {
-            return Err("Se requieren al menos 50 velas para ejecutar la calibración OOF".to_string());
+        let min_klines = match cv_config.timeframe {
+            Some(Timeframe::H4) => H4FeatureMatrix::WARMUP_BARS,
+            _ => 50,
+        };
+        if train_klines.len() < min_klines {
+            return Err(format!(
+                "Se requieren al menos {} velas para ejecutar la calibración OOF",
+                min_klines
+            ));
         }
 
         // 1. Ejecutar Purged Cross-Validation para generar predicciones OOF sin Look-Ahead
         let cv_runner = PurgedCvRunner::new(cv_config);
         let cv_result = cv_runner.run_cv(train_klines, &model_factory)?;
 
-        // 2. Calibrar umbrales óptimos sobre las predicciones Out-of-Fold
-        let (opt_long, opt_short, oof_score) = OofCalibrator::calibrate_asymmetric(
+        let (opt_long, opt_short, oof_score) = OofCalibrator::calibrate_asymmetric_with_warmup(
             &cv_result.predictions,
             train_klines,
             fitness_metric,
             bt_config,
+            cv_result.warmup_bars,
         );
 
         // 3. Entrenar la instancia definitiva del modelo sobre el 100% de train_klines

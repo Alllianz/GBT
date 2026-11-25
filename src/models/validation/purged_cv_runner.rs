@@ -1,21 +1,9 @@
-use crate::features::{FeatureMatrix, PurgedKFold, TripleBarrierLabeler};
-use crate::types::Kline;
+use crate::features::{FeatureMatrix, H4FeatureMatrix, PurgedKFold, TripleBarrierLabeler, VolScaledLabeler};
+use crate::types::{Kline, Timeframe};
 use super::oof_prediction_result::OofPredictionResult;
 use super::purged_cv_config::PurgedCvConfig;
 use super::trainable_model::TrainableModel;
 
-/// Orquestador de Validación Cruzada con Purga y Embargo (Purged Cross-Validation Runner)
-///
-/// Implementa la metodología institucional de Marcos López de Prado (2018):
-/// - Divide la serie temporal In-Sample en $K$ particiones temporales contiguas.
-/// - Purga causal previa al fold de validación para eliminar etiquetas cuyo retorno horizonte
-///   solape temporalmente con el inicio del fold ($t + H \ge test\_start$).
-/// - Embargo posterior al fold de validación para eliminar contaminación por memoria
-///   autorregresiva en los indicadores técnicos ($t \in [test\_end, test\_end + embargo)$).
-/// - Pre-calcula la matriz de características causales y etiquetas sobre la serie cronológica contigua,
-///   eliminando la discontinuidad temporal producida por concatenar bloques no contiguos de velas.
-/// - Preserva el período de warmup natural de cada fold al predecir a partir de la matriz de
-///   características real en sus índices temporales verdaderos ($t \le T$).
 pub struct PurgedCvRunner {
     pub config: PurgedCvConfig,
 }
@@ -25,10 +13,6 @@ impl PurgedCvRunner {
         Self { config }
     }
 
-    /// Ejecuta la validación cruzada purgada sobre el dataset in-sample `klines`
-    /// instanciando un modelo fresco en cada fold mediante `model_factory`.
-    ///
-    /// Retorna un `OofPredictionResult` con el vector de predicciones $V_{oof} \in \mathbb{R}^N$.
     pub fn run_cv<M, F>(
         &self,
         klines: &[Kline],
@@ -39,16 +23,30 @@ impl PurgedCvRunner {
         F: Fn() -> M,
     {
         let total_samples = klines.len();
-        if total_samples < 50 {
+        let mut probe_model = Some(model_factory());
+        let is_h4 = matches!(self.config.timeframe, Some(Timeframe::H4))
+            || probe_model
+                .as_ref()
+                .is_some_and(|m| matches!(m.timeframe(), Some(Timeframe::H4)));
+        let use_vol_scaled = self.config.use_vol_scaled_labels
+            || probe_model
+                .as_ref()
+                .is_some_and(|m| m.uses_vol_scaled_target());
+        let min_samples = if is_h4 { H4FeatureMatrix::WARMUP_BARS } else { 50 };
+        if total_samples < min_samples {
             return Err(format!(
-                "Muestras insuficientes ({}) para ejecutar Purged CV (mínimo 50)",
-                total_samples
+                "Muestras insuficientes ({}) para ejecutar Purged CV (mínimo {})",
+                total_samples, min_samples
             ));
         }
 
-        // 1. Pre-cálculo causal de matriz de variables y etiquetas sobre la serie contigua intacta
-        let (matrix_flat, total_rows) = FeatureMatrix::build(klines);
-        let f_dim = FeatureMatrix::num_features();
+        let (matrix_flat, total_rows, f_dim, warmup_bars) = if is_h4 {
+            let (m, r) = H4FeatureMatrix::build(klines);
+            (m, r, H4FeatureMatrix::num_features(), H4FeatureMatrix::WARMUP_BARS)
+        } else {
+            let (m, r) = FeatureMatrix::build(klines);
+            (m, r, FeatureMatrix::num_features(), 60)
+        };
 
         if total_rows != total_samples || matrix_flat.is_empty() {
             return Err(format!(
@@ -57,12 +55,20 @@ impl PurgedCvRunner {
             ));
         }
 
-        // 2. Generar etiquetas causales con comisión estándar de backtest (0.05% por lado = 0.0005)
-        let y_all = TripleBarrierLabeler::label_regression(
-            klines,
-            self.config.horizon,
-            self.config.commission_rate,
-        );
+        let y_all = if use_vol_scaled {
+            VolScaledLabeler::label_vol_scaled_regression(
+                klines,
+                self.config.horizon,
+                self.config.commission_rate,
+                14,
+            )
+        } else {
+            TripleBarrierLabeler::label_regression(
+                klines,
+                self.config.horizon,
+                self.config.commission_rate,
+            )
+        };
 
         let kf = PurgedKFold::new(
             self.config.n_splits,
@@ -74,11 +80,9 @@ impl PurgedCvRunner {
         let mut oof_predictions = vec![0.0; total_samples];
         let mut predicted_mask = vec![false; total_samples];
 
-        let warmup_bars = 35;
         let max_labelable_idx = total_samples.saturating_sub(self.config.horizon);
 
         for fold in &folds {
-            // 3. Filtrar índices de entrenamiento que cuenten con warmup completo y etiqueta completa
             let valid_train_indices: Vec<usize> = fold
                 .train_indices
                 .iter()
@@ -94,8 +98,6 @@ impl PurgedCvRunner {
                 ));
             }
 
-            // 4. Construir x_train e y_train directamente a partir de las posiciones indexadas
-            // (Cero concatenación de Klines discontinuas, cero salto en indicadores técnicos)
             let num_train = valid_train_indices.len();
             let mut x_train = Vec::with_capacity(num_train * f_dim);
             let mut y_train = Vec::with_capacity(num_train);
@@ -106,8 +108,7 @@ impl PurgedCvRunner {
                 y_train.push(y_all[idx]);
             }
 
-            // 5. Instanciar y entrenar el modelo del fold de manera estrictamente causal
-            let mut fold_model = model_factory();
+            let mut fold_model = probe_model.take().unwrap_or_else(&model_factory);
             fold_model.train_from_matrix(&x_train, &y_train, f_dim)?;
 
             let valid_test_indices: Vec<usize> = fold
@@ -152,6 +153,7 @@ impl PurgedCvRunner {
             total_samples,
             num_folds: folds.len(),
             valid_predictions_count,
+            warmup_bars,
         })
     }
 }
@@ -195,7 +197,6 @@ mod tests {
                 return Err("MockModel no entrenado".to_string());
             }
             let rows = x.len() / num_features;
-            // Devolver una predicción derivada deterministamente del primer feature de la fila
             let preds: Vec<f64> = (0..rows)
                 .map(|r| {
                     let f0 = x[r * num_features];
@@ -229,9 +230,10 @@ mod tests {
 
         assert_eq!(result.total_samples, n);
         assert_eq!(result.num_folds, 4);
-        assert_eq!(result.valid_predictions_count, n - 35);
+        assert_eq!(result.warmup_bars, 60);
+        assert_eq!(result.valid_predictions_count, n - 60);
         assert_eq!(result.predictions.len(), n);
-        assert!(result.predictions[..35].iter().all(|&p| p == 0.0));
+        assert!(result.predictions[..60].iter().all(|&p| p == 0.0));
     }
 
     #[test]
@@ -258,10 +260,8 @@ mod tests {
             .run_cv(&klines, || MockModel { trained: false })
             .expect("Purged CV debe ejecutarse exitosamente");
 
-        assert_eq!(result.valid_predictions_count, n - 35);
+        assert_eq!(result.valid_predictions_count, n - 60);
 
-        // Validar que en folds intermedios (ej. fold 2: índices 60..120), las primeras barras
-        // NO están en 0.0, demostrando que no se pierde el warmup al predecir sobre la matriz causal
         let mid_fold_predictions = &result.predictions[60..120];
         let non_zero_count = mid_fold_predictions.iter().filter(|&&p| p.abs() > 1e-6).count();
         assert_eq!(
@@ -269,5 +269,64 @@ mod tests {
             mid_fold_predictions.len(),
             "Todas las barras del fold intermedio deben tener predicciones activas (sin pérdida por falso warmup)"
         );
+    }
+
+    #[test]
+    fn test_purged_cv_h4_uses_185_warmup() {
+        let n = 450;
+        let klines: Vec<Kline> = (0..n)
+            .map(|i| {
+                let p = 100.0 + (i as f64 * 0.05).sin() * 10.0;
+                Kline {
+                    timestamp: (i as i64 + 1) * 14400,
+                    open: p,
+                    high: p + 1.0,
+                    low: p - 1.0,
+                    close: p + 0.2,
+                    volume: 1000.0 + (i as f64) * 2.0,
+                }
+            })
+            .collect();
+
+        let config = PurgedCvConfig::new(4, 30, 30).with_timeframe(Some(Timeframe::H4));
+        let runner = PurgedCvRunner::new(config);
+
+        let result = runner
+            .run_cv(&klines, || MockModel { trained: false })
+            .expect("Purged CV H4 debe ejecutarse exitosamente");
+
+        assert_eq!(result.valid_predictions_count, n - H4FeatureMatrix::WARMUP_BARS);
+        assert!(result.predictions[..H4FeatureMatrix::WARMUP_BARS].iter().all(|&p| p == 0.0));
+    }
+
+    #[test]
+    fn test_purged_cv_treeboost_h4_vol_scaled() {
+        let n = 450;
+        let klines: Vec<Kline> = (0..n)
+            .map(|i| {
+                let p = 100.0 + (i as f64 * 0.07).sin() * 6.0;
+                Kline {
+                    timestamp: (i as i64 + 1) * 14400,
+                    open: p,
+                    high: p + 1.5,
+                    low: p - 1.5,
+                    close: p + 0.25,
+                    volume: 1000.0 + (i as f64) * 3.0,
+                }
+            })
+            .collect();
+
+        let m_cfg = crate::models::ModelConfig::for_timeframe(Timeframe::H4);
+        let cv_cfg = PurgedCvConfig::new(3, m_cfg.horizon, 30);
+        let runner = PurgedCvRunner::new(cv_cfg);
+
+        let result = runner
+            .run_cv(&klines, || {
+                crate::models::TreeBoostModel::new(m_cfg.clone()).with_timeframe(Some(Timeframe::H4))
+            })
+            .expect("Purged CV con TreeBoost H4 debe ejecutarse exitosamente");
+
+        assert_eq!(result.warmup_bars, H4FeatureMatrix::WARMUP_BARS);
+        assert_eq!(result.valid_predictions_count, n - H4FeatureMatrix::WARMUP_BARS);
     }
 }

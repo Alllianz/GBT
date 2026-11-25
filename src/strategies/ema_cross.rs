@@ -40,6 +40,9 @@ impl Strategy for EmaCrossoverStrategy {
     }
 
     fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal {
+        if current_idx >= history.len() {
+            return Signal::flat(0);
+        }
         let current_ts = history[current_idx].timestamp;
 
         if current_idx < self.slow_period + 1 {
@@ -93,5 +96,17 @@ impl Strategy for EmaCrossoverStrategy {
         self.cached_fast = Some(fast);
         self.cached_slow = Some(slow);
         sig
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ema_cross_oob_index_returns_flat() {
+        let mut strat = EmaCrossoverStrategy::new(5, 10);
+        let sig = strat.evaluate(&[], 0);
+        assert_eq!(sig.direction, SignalDirection::Flat);
     }
 }

@@ -57,10 +57,36 @@ impl MicrostructureEngine {
         (commission, exec_type)
     }
 
-    /// Evalúa y aplica el devengo de Funding Rate sobre una posición activa dentro del portafolio.
-    /// Si se cruzan uno o más cortes de 8 horas UTC entre el último timestamp registrado y el actual
-    /// (o dentro del intervalo de la vela en temporalidades macro > 8h, C-11), actualiza `cash_balance`
-    /// (solo en Cross), `total_funding_paid` y la posición de forma inmutable y causal.
+    fn apply_funding_to_position(
+        &self,
+        pos: &mut crate::types::Position,
+        cash_balance: &mut f64,
+        total_funding_paid: &mut f64,
+        mark_price: f64,
+        target_timestamp: i64,
+    ) -> (u32, f64) {
+        let prev_timestamp = pos.last_funding_timestamp;
+        let funding_simulator = FundingRateSimulator::new(self.config.funding_config);
+        let (events, payment) = funding_simulator.evaluate_funding_accrual(
+            pos.side,
+            pos.quantity,
+            mark_price,
+            prev_timestamp,
+            target_timestamp,
+            None,
+        );
+
+        if events > 0 {
+            if pos.isolated_margin.is_none() {
+                *cash_balance -= payment;
+            }
+            *total_funding_paid += payment;
+            pos.apply_funding(payment, target_timestamp);
+        }
+
+        (events, payment)
+    }
+
     pub fn apply_funding_step(
         &self,
         portfolio: &mut Portfolio,
@@ -72,38 +98,31 @@ impl MicrostructureEngine {
             return (0, 0.0);
         }
 
-        let pos = match portfolio.active_position.as_mut() {
-            Some(p) => p,
-            None => return (0, 0.0),
-        };
+        let _ = candle_duration;
+        let target_timestamp = curr_timestamp;
 
-        let interval = self.funding_simulator.interval_duration();
-        let target_timestamp = match candle_duration {
-            Some(dur) if dur > interval => curr_timestamp + dur,
-            _ => curr_timestamp,
-        };
+        let mut total_events = 0_u32;
+        let mut total_payment = 0.0_f64;
 
-        let prev_timestamp = pos.last_funding_timestamp;
-        let (events, payment) = self.funding_simulator.evaluate_funding_accrual(
-            pos.side,
-            pos.quantity,
-            mark_price,
-            prev_timestamp,
-            target_timestamp,
-            None,
-        );
-
-        if events > 0 {
-            // C-03 & C-11: En modo Isolated, el funding devengado sale del margen aislado
-            // (no se debita de cash_balance libre). En Cross, se debita de cash_balance.
-            if pos.isolated_margin.is_none() {
-                portfolio.cash_balance -= payment;
+        for slot in [
+            &mut portfolio.active_position,
+            &mut portfolio.long_position,
+            &mut portfolio.short_position,
+        ] {
+            if let Some(pos) = slot.as_mut() {
+                let (events, payment) = self.apply_funding_to_position(
+                    pos,
+                    &mut portfolio.cash_balance,
+                    &mut portfolio.total_funding_paid,
+                    mark_price,
+                    target_timestamp,
+                );
+                total_events += events;
+                total_payment += payment;
             }
-            portfolio.total_funding_paid += payment;
-            pos.apply_funding(payment, target_timestamp);
         }
 
-        (events, payment)
+        (total_events, total_payment)
     }
 }
 
@@ -178,5 +197,48 @@ mod tests {
         let active_pos = portfolio.active_position.as_ref().unwrap();
         assert!((active_pos.accumulated_funding - 5.0).abs() < 1e-6);
         assert_eq!(active_pos.last_funding_timestamp, t_8h);
+    }
+
+    #[test]
+    fn test_microstructure_engine_multi_8h_does_not_advance_past_curr_timestamp() {
+        let mut engine = MicrostructureEngine::default();
+        engine.config.funding_config.base_funding_rate = 0.001;
+
+        let mut portfolio = Portfolio::new(10_000.0);
+        let t0 = 1767225600000_i64;
+        let day_ms = 24 * 3600 * 1000;
+
+        let pos = Position::new(
+            PositionSide::Long,
+            100.0,
+            10.0,
+            t0,
+            0,
+            None,
+            None,
+            None,
+            0.0,
+            0.0,
+        );
+        portfolio.active_position = Some(pos);
+
+        let (events_open, payment_open) =
+            engine.apply_funding_step(&mut portfolio, 100.0, t0, Some(day_ms));
+        assert_eq!(events_open, 0);
+        assert_eq!(payment_open, 0.0);
+        assert_eq!(
+            portfolio.active_position.as_ref().unwrap().last_funding_timestamp,
+            t0
+        );
+
+        let t_next_day = t0 + day_ms;
+        let (events_held, payment_held) =
+            engine.apply_funding_step(&mut portfolio, 100.0, t_next_day, Some(day_ms));
+        assert_eq!(events_held, 3);
+        assert!((payment_held - 3.0).abs() < 1e-6);
+        assert_eq!(
+            portfolio.active_position.as_ref().unwrap().last_funding_timestamp,
+            t_next_day
+        );
     }
 }

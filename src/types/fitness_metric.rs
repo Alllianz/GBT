@@ -6,9 +6,9 @@ use crate::backtest::BacktestMetrics;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum FitnessMetric {
     /// 0.5 * Linealidad R² + 0.5 * (Capital Final / Max Drawdown Nominal)
+    #[default]
     CompositeAllianz,
     /// Sharpe Ratio Anualizado
-    #[default]
     SharpeRatio,
     /// Sortino Ratio Anualizado
     SortinoRatio,

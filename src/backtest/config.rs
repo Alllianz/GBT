@@ -23,6 +23,8 @@ pub struct BacktestConfig {
     /// Timeframe explícito y tipado del backtest para dimensionamiento y anualización de volatilidad (C-21)
     #[serde(default)]
     pub timeframe: Option<Timeframe>,
+    #[serde(default)]
+    pub hedge_mode: bool,
 }
 
 impl Default for BacktestConfig {
@@ -39,6 +41,7 @@ impl Default for BacktestConfig {
             fitness_metric: FitnessMetric::SharpeRatio,
             microstructure: Some(MicrostructureConfig::default()),
             timeframe: Some(Timeframe::H1),
+            hedge_mode: false,
         }
     }
 }

@@ -6,7 +6,7 @@ use super::volatility::{GarmanKlassVolatility, ParkinsonVolatility, YangZhangVol
 pub struct FeatureMatrix;
 
 impl FeatureMatrix {
-    pub const FEATURE_NAMES: [&'static str; 11] = [
+    pub const FEATURE_NAMES: [&'static str; 13] = [
         "return_1",
         "return_3",
         "return_5",
@@ -18,9 +18,10 @@ impl FeatureMatrix {
         "candle_range_pct",
         "candle_body_pct",
         "volume_ratio_20",
+        "ret_1_vol_norm",
+        "vol_regime_ratio",
     ];
 
-    /// Catálogo extendido con estimadores institucionales de microestructura y volatilidad
     pub const EXTENDED_FEATURE_NAMES: [&'static str; 14] = [
         "return_1",
         "return_3",
@@ -46,19 +47,16 @@ impl FeatureMatrix {
         Self::EXTENDED_FEATURE_NAMES.len()
     }
 
-    /// Construye una matriz 2D plana con las features causales de cada vela en paralelo con Rayon (20 hilos)
-    /// Retorna (vector aplanado [N x F], número de filas N).
     pub fn build(klines: &[Kline]) -> (Vec<f64>, usize) {
         let n = klines.len();
-        if n < 35 {
+        if n < 60 {
             return (Vec::new(), 0);
         }
 
         let closes: Vec<f64> = klines.iter().map(|k| k.close).collect();
         let volumes: Vec<f64> = klines.iter().map(|k| k.volume).collect();
 
-        // Cálculo concurrente de los 5 indicadores técnicos con Rayon
-        let (ema10, (ema30, (rsi14, (atr14, vol_sma20)))) = rayon::join(
+        let (ema10, (ema30, (rsi14, (atr14, (atr60, vol_sma20))))) = rayon::join(
             || TechnicalIndicators::ema(&closes, 10),
             || rayon::join(
                 || TechnicalIndicators::ema(&closes, 30),
@@ -66,13 +64,15 @@ impl FeatureMatrix {
                     || TechnicalIndicators::rsi(&closes, 14),
                     || rayon::join(
                         || TechnicalIndicators::atr(klines, 14),
-                        || TechnicalIndicators::ema(&volumes, 20),
+                        || rayon::join(
+                            || TechnicalIndicators::atr(klines, 60),
+                            || TechnicalIndicators::ema(&volumes, 20),
+                        ),
                     ),
                 ),
             ),
         );
 
-        // Ensamblado paralelo del vector de características de todas las velas
         let matrix: Vec<f64> = (0..n)
             .into_par_iter()
             .flat_map(|i| {
@@ -82,19 +82,31 @@ impl FeatureMatrix {
                 let l = klines[i].low;
                 let v = klines[i].volume;
 
-                let r1 = if i >= 1 && klines[i - 1].close > 0.0 {
+                let r1 = if i >= 1
+                    && c.is_finite()
+                    && klines[i - 1].close.is_finite()
+                    && klines[i - 1].close > 0.0
+                {
                     (c - klines[i - 1].close) / klines[i - 1].close
                 } else {
                     0.0
                 };
 
-                let r3 = if i >= 3 && klines[i - 3].close > 0.0 {
+                let r3 = if i >= 3
+                    && c.is_finite()
+                    && klines[i - 3].close.is_finite()
+                    && klines[i - 3].close > 0.0
+                {
                     (c - klines[i - 3].close) / klines[i - 3].close
                 } else {
                     0.0
                 };
 
-                let r5 = if i >= 5 && klines[i - 5].close > 0.0 {
+                let r5 = if i >= 5
+                    && c.is_finite()
+                    && klines[i - 5].close.is_finite()
+                    && klines[i - 5].close > 0.0
+                {
                     (c - klines[i - 5].close) / klines[i - 5].close
                 } else {
                     0.0
@@ -103,18 +115,67 @@ impl FeatureMatrix {
                 let e10 = ema10[i];
                 let e30 = ema30[i];
 
-                let ema10_ratio = if e10 > 0.0 { (c - e10) / e10 } else { 0.0 };
-                let ema30_ratio = if e30 > 0.0 { (c - e30) / e30 } else { 0.0 };
-                let ema_spread = if e30 > 0.0 { (e10 - e30) / e30 } else { 0.0 };
+                let ema10_ratio = if c.is_finite() && e10.is_finite() && e10 > 0.0 {
+                    (c - e10) / e10
+                } else {
+                    0.0
+                };
+                let ema30_ratio = if c.is_finite() && e30.is_finite() && e30 > 0.0 {
+                    (c - e30) / e30
+                } else {
+                    0.0
+                };
+                let ema_spread = if e10.is_finite() && e30.is_finite() && e30 > 0.0 {
+                    (e10 - e30) / e30
+                } else {
+                    0.0
+                };
 
-                let rsi_norm = (rsi14[i] / 100.0).clamp(0.0, 1.0);
-                let atr_pct = if c > 0.0 { atr14[i] / c } else { 0.0 };
+                let rsi_norm = if rsi14[i].is_finite() {
+                    (rsi14[i] / 100.0).clamp(0.0, 1.0)
+                } else {
+                    0.5
+                };
+                let atr_pct = if c > 0.0 && c.is_finite() && atr14[i].is_finite() {
+                    atr14[i] / c
+                } else {
+                    0.0
+                };
+                let atr_60_pct = if c > 0.0 && c.is_finite() && atr60[i].is_finite() {
+                    atr60[i] / c
+                } else {
+                    0.0
+                };
 
-                let range_pct = if c > 0.0 { (h - l) / c } else { 0.0 };
-                let body_pct = if c > 0.0 { (c - o) / c } else { 0.0 };
+                let range_pct = if c > 0.0 && c.is_finite() && h.is_finite() && l.is_finite() {
+                    (h - l) / c
+                } else {
+                    0.0
+                };
+                let body_pct = if c > 0.0 && c.is_finite() && o.is_finite() {
+                    (c - o) / c
+                } else {
+                    0.0
+                };
 
                 let v_sma = vol_sma20[i];
-                let vol_ratio = if v_sma > 0.0 { (v / v_sma).min(10.0) } else { 1.0 };
+                let vol_ratio = if v_sma > 0.0 && v_sma.is_finite() && v.is_finite() {
+                    (v / v_sma).min(10.0)
+                } else {
+                    1.0
+                };
+
+                let ret_1_vol_norm = if atr_pct > 1e-8 && atr_pct.is_finite() && r1.is_finite() {
+                    (r1 / atr_pct).clamp(-10.0, 10.0)
+                } else {
+                    0.0
+                };
+                let vol_regime_ratio =
+                    if atr_60_pct > 1e-8 && atr_60_pct.is_finite() && atr_pct.is_finite() {
+                        (atr_pct / atr_60_pct).clamp(0.0, 10.0)
+                    } else {
+                        1.0
+                    };
 
                 [
                     r1,
@@ -128,6 +189,8 @@ impl FeatureMatrix {
                     range_pct,
                     body_pct,
                     vol_ratio,
+                    ret_1_vol_norm,
+                    vol_regime_ratio,
                 ]
             })
             .collect();
@@ -135,8 +198,6 @@ impl FeatureMatrix {
         (matrix, n)
     }
 
-    /// Construye la matriz enriquecida incorporando estimadores institucionales de volatilidad
-    /// (Parkinson, Garman-Klass y Yang-Zhang) calculados concurrentemente de forma causal.
     pub fn build_extended(klines: &[Kline]) -> (Vec<f64>, usize) {
         let n = klines.len();
         if n < 35 {
@@ -146,7 +207,6 @@ impl FeatureMatrix {
         let closes: Vec<f64> = klines.iter().map(|k| k.close).collect();
         let volumes: Vec<f64> = klines.iter().map(|k| k.volume).collect();
 
-        // Cómputo concurrente de indicadores técnicos y estimadores de volatilidad
         let (
             (ema10, (ema30, (rsi14, (atr14, vol_sma20)))),
             (parkinson, (garman_klass, yang_zhang)),
@@ -186,19 +246,31 @@ impl FeatureMatrix {
                 let l = klines[i].low;
                 let v = klines[i].volume;
 
-                let r1 = if i >= 1 && klines[i - 1].close > 0.0 {
+                let r1 = if i >= 1
+                    && c.is_finite()
+                    && klines[i - 1].close.is_finite()
+                    && klines[i - 1].close > 0.0
+                {
                     (c - klines[i - 1].close) / klines[i - 1].close
                 } else {
                     0.0
                 };
 
-                let r3 = if i >= 3 && klines[i - 3].close > 0.0 {
+                let r3 = if i >= 3
+                    && c.is_finite()
+                    && klines[i - 3].close.is_finite()
+                    && klines[i - 3].close > 0.0
+                {
                     (c - klines[i - 3].close) / klines[i - 3].close
                 } else {
                     0.0
                 };
 
-                let r5 = if i >= 5 && klines[i - 5].close > 0.0 {
+                let r5 = if i >= 5
+                    && c.is_finite()
+                    && klines[i - 5].close.is_finite()
+                    && klines[i - 5].close > 0.0
+                {
                     (c - klines[i - 5].close) / klines[i - 5].close
                 } else {
                     0.0
@@ -207,22 +279,54 @@ impl FeatureMatrix {
                 let e10 = ema10[i];
                 let e30 = ema30[i];
 
-                let ema10_ratio = if e10 > 0.0 { (c - e10) / e10 } else { 0.0 };
-                let ema30_ratio = if e30 > 0.0 { (c - e30) / e30 } else { 0.0 };
-                let ema_spread = if e30 > 0.0 { (e10 - e30) / e30 } else { 0.0 };
+                let ema10_ratio = if c.is_finite() && e10.is_finite() && e10 > 0.0 {
+                    (c - e10) / e10
+                } else {
+                    0.0
+                };
+                let ema30_ratio = if c.is_finite() && e30.is_finite() && e30 > 0.0 {
+                    (c - e30) / e30
+                } else {
+                    0.0
+                };
+                let ema_spread = if e10.is_finite() && e30.is_finite() && e30 > 0.0 {
+                    (e10 - e30) / e30
+                } else {
+                    0.0
+                };
 
-                let rsi_norm = (rsi14[i] / 100.0).clamp(0.0, 1.0);
-                let atr_pct = if c > 0.0 { atr14[i] / c } else { 0.0 };
+                let rsi_norm = if rsi14[i].is_finite() {
+                    (rsi14[i] / 100.0).clamp(0.0, 1.0)
+                } else {
+                    0.5
+                };
+                let atr_pct = if c > 0.0 && c.is_finite() && atr14[i].is_finite() {
+                    atr14[i] / c
+                } else {
+                    0.0
+                };
 
-                let range_pct = if c > 0.0 { (h - l) / c } else { 0.0 };
-                let body_pct = if c > 0.0 { (c - o) / c } else { 0.0 };
+                let range_pct = if c > 0.0 && c.is_finite() && h.is_finite() && l.is_finite() {
+                    (h - l) / c
+                } else {
+                    0.0
+                };
+                let body_pct = if c > 0.0 && c.is_finite() && o.is_finite() {
+                    (c - o) / c
+                } else {
+                    0.0
+                };
 
                 let v_sma = vol_sma20[i];
-                let vol_ratio = if v_sma > 0.0 { (v / v_sma).min(10.0) } else { 1.0 };
+                let vol_ratio = if v_sma > 0.0 && v_sma.is_finite() && v.is_finite() {
+                    (v / v_sma).min(10.0)
+                } else {
+                    1.0
+                };
 
-                let vol_p = parkinson[i];
-                let vol_gk = garman_klass[i];
-                let vol_yz = yang_zhang[i];
+                let vol_p = if parkinson[i].is_finite() { parkinson[i] } else { 0.0 };
+                let vol_gk = if garman_klass[i].is_finite() { garman_klass[i] } else { 0.0 };
+                let vol_yz = if yang_zhang[i].is_finite() { yang_zhang[i] } else { 0.0 };
 
                 [
                     r1,
@@ -246,9 +350,8 @@ impl FeatureMatrix {
         (matrix, n)
     }
 
-    /// Extrae las features de una sola vela en el instante `idx` causalmente (t <= T).
     pub fn extract_single_vector(klines: &[Kline], idx: usize) -> Option<Vec<f64>> {
-        if idx < 34 || idx >= klines.len() {
+        if idx < 59 || idx >= klines.len() {
             return None;
         }
 
@@ -264,7 +367,6 @@ impl FeatureMatrix {
         Some(matrix[start..end].to_vec())
     }
 
-    /// Extrae el vector individual de 14 features extendidas causalmente (t <= T).
     pub fn extract_single_extended_vector(klines: &[Kline], idx: usize) -> Option<Vec<f64>> {
         if idx < 34 || idx >= klines.len() {
             return None;
@@ -317,8 +419,9 @@ mod tests {
         assert_eq!(total_rows, 100);
         let f_dim = FeatureMatrix::num_features();
 
-        // Validar identidad numérica exacta para múltiples índices temporales
-        for &idx in &[35, 50, 75, 99] {
+        assert!(FeatureMatrix::extract_single_vector(&klines, 58).is_none());
+
+        for &idx in &[59, 75, 99] {
             let single_vec = FeatureMatrix::extract_single_vector(&klines, idx)
                 .expect("Debe extraer vector individual causal");
             let batch_slice = &full_matrix[idx * f_dim..(idx + 1) * f_dim];
@@ -368,5 +471,26 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_warmup_60_and_non_finite_guards() {
+        let mut klines = generate_mock_klines(59);
+        let (empty_mat, empty_rows) = FeatureMatrix::build(&klines);
+        assert_eq!(empty_rows, 0);
+        assert!(empty_mat.is_empty());
+
+        klines.extend(generate_mock_klines(10));
+        klines[62].close = f64::NAN;
+        klines[63].high = f64::INFINITY;
+        klines[64].volume = f64::NAN;
+
+        let (mat, rows) = FeatureMatrix::build(&klines);
+        assert_eq!(rows, 69);
+        assert!(mat.iter().all(|v| v.is_finite()));
+
+        let (mat_ext, rows_ext) = FeatureMatrix::build_extended(&klines);
+        assert_eq!(rows_ext, 69);
+        assert!(mat_ext.iter().all(|v| v.is_finite()));
     }
 }

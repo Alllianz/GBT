@@ -11,8 +11,6 @@ pub struct ModelConfig {
     pub horizon: usize,
     pub long_threshold: f64,
     pub short_threshold: f64,
-    /// Tasa de comisión por lado (fee roundtrip = commission_rate * 2.0).
-    /// BUG-F01: Se deduce en el etiquetado causal sin slippage por orden de Allianz.
     pub commission_rate: f64,
 }
 
@@ -56,14 +54,21 @@ impl ModelConfig {
 
     pub fn for_timeframe(tf: crate::types::Timeframe) -> Self {
         let l2_regularization = match tf {
-            crate::types::Timeframe::D1 => 0.05,
-            crate::types::Timeframe::H4 => 0.08,
+            crate::types::Timeframe::D1 => 0.18,
+            crate::types::Timeframe::H4 => 0.16,
+            crate::types::Timeframe::H1 => 0.16,
             _ => 0.10,
         };
-        let (max_depth, num_trees, learning_rate) = (2, 40, 0.02);
+        let num_trees = match tf {
+            crate::types::Timeframe::D1 => 30,
+            crate::types::Timeframe::H4 => 35,
+            crate::types::Timeframe::H1 => 35,
+            _ => 40,
+        };
+        let (max_depth, learning_rate) = (2, 0.02);
         let horizon = match tf {
             crate::types::Timeframe::D1 => 5,
-            crate::types::Timeframe::H4 => 8,
+            crate::types::Timeframe::H4 => 12,
             crate::types::Timeframe::H1 => 12,
             _ => 16,
         };
@@ -95,10 +100,10 @@ mod tests {
 
         let d1 = ModelConfig::for_timeframe(Timeframe::D1);
         assert_eq!(d1.max_depth, 2);
-        assert_eq!(d1.num_trees, 40);
+        assert_eq!(d1.num_trees, 30);
         assert!((d1.learning_rate - 0.02).abs() < 1e-6);
         assert!((d1.l1_regularization - 0.01).abs() < 1e-6);
-        assert!((d1.l2_regularization - 0.05).abs() < 1e-6);
+        assert!((d1.l2_regularization - 0.18).abs() < 1e-6);
         assert_eq!(d1.horizon, 5);
         assert!((d1.commission_rate - base.commission_rate).abs() < 1e-12);
         assert!((d1.long_threshold - base.long_threshold).abs() < 1e-12);
@@ -106,16 +111,17 @@ mod tests {
 
         let h4 = ModelConfig::for_timeframe(Timeframe::H4);
         assert_eq!(h4.max_depth, 2);
-        assert_eq!(h4.num_trees, 40);
+        assert_eq!(h4.num_trees, 35);
         assert!((h4.learning_rate - 0.02).abs() < 1e-6);
-        assert!((h4.l2_regularization - 0.08).abs() < 1e-6);
-        assert_eq!(h4.horizon, 8);
+        assert!((h4.l1_regularization - 0.01).abs() < 1e-6);
+        assert!((h4.l2_regularization - 0.16).abs() < 1e-6);
+        assert_eq!(h4.horizon, 12);
 
         let h1 = ModelConfig::for_timeframe(Timeframe::H1);
         assert_eq!(h1.max_depth, 2);
-        assert_eq!(h1.num_trees, 40);
+        assert_eq!(h1.num_trees, 35);
         assert!((h1.learning_rate - 0.02).abs() < 1e-6);
-        assert!((h1.l2_regularization - 0.10).abs() < 1e-6);
+        assert!((h1.l2_regularization - 0.16).abs() < 1e-6);
         assert_eq!(h1.horizon, 12);
 
         let m15 = ModelConfig::for_timeframe(Timeframe::M15);

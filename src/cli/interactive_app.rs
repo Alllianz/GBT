@@ -6,6 +6,7 @@ use super::cart_handler::CartHandler;
 use super::config_handler::ConfigHandler;
 use super::db_handler::DbHandler;
 use super::forust_handler::ForustHandler;
+use super::hmm_hedge_handler::HmmHedgeHandler;
 use super::input_reader::InputReader;
 use super::menu_printer::MenuPrinter;
 use super::native_gbdt_handler::NativeGbdtHandler;
@@ -76,12 +77,17 @@ impl InteractiveApp {
                 "8" => {
                     ConfigHandler::handle(&mut self.backtest_config);
                 }
+                "9" => {
+                    if let Err(e) = HmmHedgeHandler::handle(conn, &self.backtest_config) {
+                        eprintln!("\n❌ Error durante la operación: {}\n", e);
+                    }
+                }
                 "0" => {
                     println!("\n👋 Finalizando sesión de GBT. ¡Hasta luego!");
                     break;
                 }
                 _ => {
-                    println!("Opción no válida. Por favor, selecciona una opción entre 0 y 8.");
+                    println!("Opción no válida. Por favor, selecciona una opción entre 0 y 9.");
                 }
             }
         }

@@ -1,7 +1,8 @@
-use crate::types::{CompletedTrade, Kline, Signal};
+use crate::types::{CompletedTrade, HedgeSignal, Kline, Signal};
 use super::close_equity_evaluator::CloseEquityEvaluator;
 use super::config::BacktestConfig;
 use super::equity_point::EquityPoint;
+use super::execution::HedgeExecutionEngine;
 use super::execution_engine::ExecutionEngine;
 use super::metrics::BacktestMetrics;
 use super::metrics_calculator::MetricsCalculator;
@@ -22,6 +23,21 @@ pub struct BacktestEngine {
 impl BacktestEngine {
     pub fn new(config: BacktestConfig) -> Self {
         Self { config }
+    }
+
+    fn causal_volatility(klines: &[Kline], current_idx: usize) -> Option<f64> {
+        if current_idx >= 2 {
+            let lookback = current_idx.saturating_sub(20);
+            let window_klines = &klines[lookback..current_idx];
+            if window_klines.len() >= 2 {
+                let closes: Vec<f64> = window_klines.iter().map(|k| k.close).collect();
+                crate::risk::VolatilityTargetingSizer::calculate_realized_volatility(&closes)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     pub fn run(
@@ -63,6 +79,7 @@ impl BacktestEngine {
         };
 
         let mut pending_signal: Option<Signal> = None;
+        let mut pending_hedge_signal: Option<HedgeSignal> = None;
         let mut peak_equity = self.config.initial_capital;
 
         let mut last_eval_idx = 0;
@@ -76,66 +93,165 @@ impl BacktestEngine {
             // C-33 & C-08: Invocamos strategy.evaluate(&klines[..=i], i) en cada barra de calentamiento pasando estrictamente
             // el slice causal para que las estrategias con estado interno calienten su memoria sin look-ahead.
             if i < warmup_bars {
-                let sig = strategy.evaluate(&klines[..=i], i);
-                // En la vela inmediatamente anterior al inicio de test (i + 1 == warmup_bars),
-                // retenemos la señal para que la primera vela de prueba (en i == warmup_bars)
-                // pueda ejecutar la orden al Open si el modelo emite señal.
-                if i + 1 == warmup_bars {
-                    pending_signal = Some(sig);
+                if self.config.hedge_mode {
+                    let sig = strategy.evaluate_hedge(&klines[..=i], i);
+                    if i + 1 == warmup_bars {
+                        pending_hedge_signal = Some(sig);
+                    } else {
+                        let _ = sig;
+                    }
                 } else {
-                    let _ = sig;
+                    let sig = strategy.evaluate(&klines[..=i], i);
+                    // En la vela inmediatamente anterior al inicio de test (i + 1 == warmup_bars),
+                    // retenemos la señal para que la primera vela de prueba (en i == warmup_bars)
+                    // pueda ejecutar la orden al Open si el modelo emite señal.
+                    if i + 1 == warmup_bars {
+                        pending_signal = Some(sig);
+                    } else {
+                        let _ = sig;
+                    }
                 }
                 continue;
             }
 
             let eval_idx = i.saturating_sub(warmup_bars);
 
-            // 1. Si hay una señal generada en el cierre de la vela anterior (t-1), se ejecuta en el Open de la vela actual (t)
-            if let Some(signal) = pending_signal.take() {
-                // Estimación causal de volatilidad sobre velas cerradas previas (t <= T, velas < i)
-                let current_volatility = if i >= 2 {
-                    let lookback = i.saturating_sub(20);
-                    let window_klines = &klines[lookback..i];
-                    if window_klines.len() >= 2 {
-                        let closes: Vec<f64> = window_klines.iter().map(|k| k.close).collect();
-                        crate::risk::VolatilityTargetingSizer::calculate_realized_volatility(&closes)
-                    } else {
-                        None
+            let mut open_closed_side: Option<crate::types::PositionSide> = None;
+            let mut open_closed_hedge_long = false;
+            let mut open_closed_hedge_short = false;
+
+            if portfolio.has_position() {
+                let open_candle = Kline {
+                    timestamp: current_candle.timestamp,
+                    open: current_candle.open,
+                    high: current_candle.open,
+                    low: current_candle.open,
+                    close: current_candle.open,
+                    volume: 0.0,
+                };
+                if self.config.hedge_mode {
+                    let open_exits = HedgeExecutionEngine::check_intra_candle_hedge_exits(
+                        &mut portfolio,
+                        &self.config,
+                        &open_candle,
+                        eval_idx,
+                    );
+                    for exit in &open_exits {
+                        match exit.side {
+                            crate::types::PositionSide::Long => open_closed_hedge_long = true,
+                            crate::types::PositionSide::Short => open_closed_hedge_short = true,
+                        }
                     }
-                } else {
-                    None
-                };
-
-                let current_eq = portfolio.current_equity(current_candle.open);
-                let current_dd = if peak_equity > 0.0 {
-                    (peak_equity - current_eq).max(0.0) / peak_equity
-                } else {
-                    0.0
-                };
-
-                let risk_ctx = crate::risk::RiskEvaluationContext {
-                    equity: current_eq,
-                    leverage: self.config.leverage,
-                    exec_price: current_candle.open,
-                    closed_trades: &trades,
-                    current_volatility,
-                    current_drawdown: current_dd,
-                    signal_strength: signal.strength,
-                    dynamic_sl: signal.stop_loss_price,
-                    annualization_factor: self.config.timeframe.map(|tf| tf.annualization_factor()),
-                    timeframe: self.config.timeframe,
-                    peak_equity,
-                };
-
-                if let Some(trade) = ExecutionEngine::process_signal_at_open_with_risk(
+                    trades.extend(open_exits);
+                } else if let Some(trade) = ExecutionEngine::check_intra_candle_exits(
                     &mut portfolio,
                     &self.config,
-                    &signal,
-                    current_candle,
+                    &open_candle,
                     eval_idx,
-                    Some(&risk_ctx),
                 ) {
+                    open_closed_side = Some(trade.side);
                     trades.push(trade);
+                }
+            }
+
+            if self.config.hedge_mode {
+                if let Some(mut hedge_signal) = pending_hedge_signal.take() {
+                    if open_closed_hedge_long
+                        && matches!(
+                            hedge_signal.long,
+                            crate::types::HedgeLegAction::OpenOrKeep { .. }
+                        )
+                    {
+                        hedge_signal.long = crate::types::HedgeLegAction::Hold;
+                    }
+                    if open_closed_hedge_short
+                        && matches!(
+                            hedge_signal.short,
+                            crate::types::HedgeLegAction::OpenOrKeep { .. }
+                        )
+                    {
+                        hedge_signal.short = crate::types::HedgeLegAction::Hold;
+                    }
+                    let current_volatility = Self::causal_volatility(klines, i);
+                    let current_eq = portfolio.current_equity(current_candle.open);
+                    let current_dd = if peak_equity > 0.0 {
+                        (peak_equity - current_eq).max(0.0) / peak_equity
+                    } else {
+                        0.0
+                    };
+
+                    let risk_ctx = crate::risk::RiskEvaluationContext {
+                        equity: current_eq,
+                        leverage: self.config.leverage,
+                        exec_price: current_candle.open,
+                        closed_trades: &trades,
+                        current_volatility,
+                        current_drawdown: current_dd,
+                        signal_strength: 1.0,
+                        dynamic_sl: None,
+                        annualization_factor: self
+                            .config
+                            .timeframe
+                            .map(|tf| tf.annualization_factor()),
+                        timeframe: self.config.timeframe,
+                        peak_equity,
+                    };
+
+                    let closed = HedgeExecutionEngine::process_hedge_signal_at_open(
+                        &mut portfolio,
+                        &self.config,
+                        &hedge_signal,
+                        current_candle,
+                        eval_idx,
+                        Some(&risk_ctx),
+                    );
+                    trades.extend(closed);
+                }
+            } else if let Some(signal) = pending_signal.take() {
+                let skip_same_side_reentry = matches!(
+                    (open_closed_side, signal.direction),
+                    (
+                        Some(crate::types::PositionSide::Long),
+                        crate::types::SignalDirection::Long
+                    ) | (
+                        Some(crate::types::PositionSide::Short),
+                        crate::types::SignalDirection::Short
+                    )
+                );
+                if !skip_same_side_reentry {
+                    let current_volatility = Self::causal_volatility(klines, i);
+
+                    let current_eq = portfolio.current_equity(current_candle.open);
+                    let current_dd = if peak_equity > 0.0 {
+                        (peak_equity - current_eq).max(0.0) / peak_equity
+                    } else {
+                        0.0
+                    };
+
+                    let risk_ctx = crate::risk::RiskEvaluationContext {
+                        equity: current_eq,
+                        leverage: self.config.leverage,
+                        exec_price: current_candle.open,
+                        closed_trades: &trades,
+                        current_volatility,
+                        current_drawdown: current_dd,
+                        signal_strength: signal.strength,
+                        dynamic_sl: signal.stop_loss_price,
+                        annualization_factor: self.config.timeframe.map(|tf| tf.annualization_factor()),
+                        timeframe: self.config.timeframe,
+                        peak_equity,
+                    };
+
+                    if let Some(trade) = ExecutionEngine::process_signal_at_open_with_risk(
+                        &mut portfolio,
+                        &self.config,
+                        &signal,
+                        current_candle,
+                        eval_idx,
+                        Some(&risk_ctx),
+                    ) {
+                        trades.push(trade);
+                    }
                 }
             }
 
@@ -147,7 +263,15 @@ impl BacktestEngine {
 
             // 2. Evaluar condiciones intra-vela (Stop Loss / Take Profit / Liquidación) con los extremos High/Low
             // Las salidas intra-vela por SL, TP y liquidación son eventos de ejecución, NO de valoración de equity.
-            if let Some(trade) = ExecutionEngine::check_intra_candle_exits(
+            if self.config.hedge_mode {
+                let exits = HedgeExecutionEngine::check_intra_candle_hedge_exits(
+                    &mut portfolio,
+                    &self.config,
+                    current_candle,
+                    eval_idx,
+                );
+                trades.extend(exits);
+            } else if let Some(trade) = ExecutionEngine::check_intra_candle_exits(
                 &mut portfolio,
                 &self.config,
                 current_candle,
@@ -177,26 +301,47 @@ impl BacktestEngine {
             }
 
             // 4. Generar señal al CIERRE de la vela actual usando estrictamente velas hasta el índice i (C-08: t <= T)
-            let sig = strategy.evaluate(&klines[..=i], i);
-            pending_signal = Some(sig);
+            if self.config.hedge_mode {
+                pending_hedge_signal = Some(strategy.evaluate_hedge(&klines[..=i], i));
+            } else {
+                let sig = strategy.evaluate(&klines[..=i], i);
+                pending_signal = Some(sig);
+            }
         }
 
         // Cierre de cualquier posición remanente en la última vela evaluada (BUG-39: Cero Look-Ahead Bias)
-        if let Some(pos) = portfolio.active_position.take() {
-            let exit_candle = &klines[last_eval_idx];
-            let reason = if is_bankrupt {
-                "Bankruptcy (Account Insolvent)".to_string()
-            } else {
-                "End of Data Horizon".to_string()
-            };
+        let exit_candle = &klines[last_eval_idx];
+        let end_reason = if is_bankrupt {
+            "Bankruptcy (Account Insolvent)"
+        } else {
+            "End of Data Horizon"
+        };
+        let end_idx = last_eval_idx.saturating_sub(warmup_bars);
+        if self.config.hedge_mode {
+            for pos in [portfolio.long_position.take(), portfolio.short_position.take()]
+                .into_iter()
+                .flatten()
+            {
+                let trade = ExecutionEngine::close_position(
+                    &mut portfolio,
+                    &self.config,
+                    pos,
+                    exit_candle.close,
+                    exit_candle.timestamp,
+                    end_idx,
+                    end_reason.to_string(),
+                );
+                trades.push(trade);
+            }
+        } else if let Some(pos) = portfolio.active_position.take() {
             let trade = ExecutionEngine::close_position(
                 &mut portfolio,
                 &self.config,
                 pos,
                 exit_candle.close,
                 exit_candle.timestamp,
-                last_eval_idx.saturating_sub(warmup_bars),
-                reason,
+                end_idx,
+                end_reason.to_string(),
             );
             trades.push(trade);
         }
@@ -794,18 +939,103 @@ mod tests {
 
         assert_eq!(res.trades.len(), 1);
         let trade = &res.trades[0];
-        // En Día 2: 3 cortes tasados al Open (100.0) -> $3.00
-        // En Día 3: 3 cortes tasados al Open (100.0) -> $3.00
-        // Total esperado: 6 cortes de 8h = $6.00 de funding acumulado
         assert!(
-            (trade.funding_paid - 6.0).abs() < 1e-4,
-            "Trade en velas 1D debe reflejar $6.00 de costes por 6 cortes de funding, obtenido: {}",
+            (trade.funding_paid - 3.0).abs() < 1e-4,
+            "Trade en velas 1D debe reflejar $3.00 de costes por 3 cortes de funding, obtenido: {}",
             trade.funding_paid
         );
         assert!(
-            (res.metrics.total_funding - 6.0).abs() < 1e-4,
-            "Métricas de 1D deben registrar total_funding = 6.0, obtenido: {}",
+            (res.metrics.total_funding - 3.0).abs() < 1e-4,
+            "Métricas de 1D deben registrar total_funding = 3.0, obtenido: {}",
             res.metrics.total_funding
         );
+    }
+
+    #[test]
+    fn test_open_gap_exit_not_charged_funding_for_exit_bar() {
+        let t0 = 1767225600000_i64;
+        let eight_hours = 8 * 3600 * 1000;
+
+        let klines = vec![
+            Kline { timestamp: t0, open: 100.0, high: 100.0, low: 100.0, close: 100.0, volume: 10.0 },
+            Kline { timestamp: t0 + eight_hours, open: 100.0, high: 100.0, low: 100.0, close: 100.0, volume: 10.0 },
+            Kline { timestamp: t0 + 2 * eight_hours, open: 90.0, high: 91.0, low: 89.0, close: 90.0, volume: 10.0 },
+        ];
+
+        let mut ms = MicrostructureConfig::default();
+        ms.fee_schedule.custom_maker_fee = Some(0.0);
+        ms.fee_schedule.custom_taker_fee = Some(0.0);
+        ms.funding_config.enabled = true;
+        ms.funding_config.base_funding_rate = 0.001;
+
+        let config = BacktestConfig {
+            initial_capital: 10_000.0,
+            margin_mode: MarginMode::Cross,
+            position_sizing: PositionSizing::FixedAmount(1000.0),
+            commission_rate: 0.0,
+            leverage: 1.0,
+            microstructure: Some(ms),
+            ..Default::default()
+        };
+
+        let engine = BacktestEngine::new(config);
+        let mut strategy = StopLossStrategy { sl_price: 95.0 };
+        let res = engine.run(&mut strategy, &klines).unwrap();
+
+        assert_eq!(res.trades.len(), 1);
+        assert_eq!(res.trades[0].exit_reason, "Stop Loss");
+        assert_eq!(res.trades[0].exit_price, 90.0);
+        assert_eq!(res.trades[0].funding_paid, 0.0);
+        assert_eq!(res.metrics.total_funding, 0.0);
+    }
+
+    struct DualHedgeTestStrategy;
+    impl Strategy for DualHedgeTestStrategy {
+        fn name(&self) -> &str {
+            "DualHedgeTestStrategy"
+        }
+        fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal {
+            Signal::flat(history[current_idx].timestamp)
+        }
+        fn evaluate_hedge(&mut self, history: &[Kline], current_idx: usize) -> HedgeSignal {
+            let ts = history[current_idx].timestamp;
+            if current_idx == 0 {
+                HedgeSignal {
+                    timestamp: ts,
+                    long: crate::types::HedgeLegAction::open_or_keep(1.0, None, None, 1.0),
+                    short: crate::types::HedgeLegAction::open_or_keep(1.0, None, None, 0.5),
+                }
+            } else {
+                HedgeSignal::hold(ts)
+            }
+        }
+    }
+
+    #[test]
+    fn test_hedge_mode_closes_both_legs_at_end_of_horizon() {
+        let klines = vec![
+            Kline { timestamp: 100, open: 100.0, high: 102.0, low: 98.0, close: 100.0, volume: 10.0 },
+            Kline { timestamp: 200, open: 100.0, high: 112.0, low: 99.0, close: 110.0, volume: 10.0 },
+            Kline { timestamp: 300, open: 110.0, high: 122.0, low: 108.0, close: 120.0, volume: 10.0 },
+        ];
+        let config = BacktestConfig {
+            initial_capital: 10_000.0,
+            leverage: 1.0,
+            commission_rate: 0.0,
+            position_sizing: PositionSizing::PercentOfEquity(0.5),
+            hedge_mode: true,
+            ..Default::default()
+        };
+        let engine = BacktestEngine::new(config);
+        let mut strat = DualHedgeTestStrategy;
+        let res = engine.run(&mut strat, &klines).unwrap();
+        assert_eq!(res.trades.len(), 2);
+        assert_eq!(res.trades[0].side, crate::types::PositionSide::Long);
+        assert_eq!(res.trades[1].side, crate::types::PositionSide::Short);
+        assert_eq!(res.trades[0].exit_reason, "End of Data Horizon");
+        assert_eq!(res.trades[1].exit_reason, "End of Data Horizon");
+        assert!((res.trades[0].net_pnl - 1000.0).abs() < 1e-4);
+        assert!((res.trades[1].net_pnl + 500.0).abs() < 1e-4);
+        assert!((res.equity_curve.last().unwrap().equity - 10_500.0).abs() < 1e-4);
     }
 }

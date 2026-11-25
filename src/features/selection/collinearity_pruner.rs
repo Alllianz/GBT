@@ -1,8 +1,3 @@
-/// Podador de Colinealidad y Multicolinealidad (CollinearityPruner)
-///
-/// Agrupa y poda características cuya correlación mutua absoluta supera el umbral
-/// permitido ($|\rho| > \tau$), preservando exclusivamente el representante más informativo
-/// de cada clúster ortogonal para evitar la dispersión de ganancia en árboles de decisión (GBDT).
 #[derive(Debug, Clone)]
 pub struct CollinearityPruner {
     pub max_correlation: f64,
@@ -15,16 +10,12 @@ impl CollinearityPruner {
         }
     }
 
-    /// Selecciona los índices de características retenidas ortogonales.
-    /// Si se provee `scores` (ej. importancias MDA o varianzas), se priorizan
-    /// las variables con mayor puntuación informativa dentro de cada par colineal.
     pub fn prune_features(&self, corr_matrix: &[Vec<f64>], scores: Option<&[f64]>) -> Vec<usize> {
         let n_cols = corr_matrix.len();
         if n_cols == 0 {
             return Vec::new();
         }
 
-        // Determinar orden de prioridad de los candidatos
         let mut candidates: Vec<usize> = (0..n_cols).collect();
         if let Some(s) = scores {
             if s.len() == n_cols {
@@ -51,12 +42,10 @@ impl CollinearityPruner {
             }
         }
 
-        // Ordenar los índices resultantes en orden ascendente para indexación consistente
         selected.sort_unstable();
         selected
     }
 
-    /// Identifica los clústeres de variables colineales usando componentes conectados
     pub fn find_clusters(&self, corr_matrix: &[Vec<f64>]) -> Vec<Vec<usize>> {
         let n = corr_matrix.len();
         if n == 0 {
@@ -92,7 +81,6 @@ impl CollinearityPruner {
         clusters
     }
 
-    /// Filtra y proyecta una matriz aplanada [n_rows x n_cols] conservando solo las columnas seleccionadas
     pub fn prune_matrix(
         features_flat: &[f64],
         n_rows: usize,
@@ -100,7 +88,13 @@ impl CollinearityPruner {
         selected: &[usize],
     ) -> Vec<f64> {
         let n_selected = selected.len();
-        if n_rows == 0 || n_selected == 0 {
+        if n_rows == 0 || n_cols == 0 || n_selected == 0 {
+            return Vec::new();
+        }
+        let Some(required_len) = n_rows.checked_mul(n_cols) else {
+            return Vec::new();
+        };
+        if features_flat.len() < required_len || selected.iter().any(|&col| col >= n_cols) {
             return Vec::new();
         }
 
@@ -115,7 +109,6 @@ impl CollinearityPruner {
         pruned
     }
 
-    /// Filtra y proyecta un único vector de inferencia causal
     pub fn prune_vector(row_features: &[f64], selected: &[usize]) -> Vec<f64> {
         selected
             .iter()
@@ -136,7 +129,6 @@ mod tests {
 
     #[test]
     fn test_prune_collinear_features_without_scores() {
-        // Matriz de 3 variables: col 0 y col 1 correlacionadas a 0.95, col 2 ortogonal a 0.10
         let corr_matrix = vec![
             vec![1.00, 0.95, 0.10],
             vec![0.95, 1.00, 0.12],
@@ -146,7 +138,6 @@ mod tests {
         let pruner = CollinearityPruner::new(0.85);
         let selected = pruner.prune_features(&corr_matrix, None);
 
-        // Debe conservar la primera de las dos colineales (col 0) y la ortogonal (col 2)
         assert_eq!(selected, vec![0, 2]);
     }
 
@@ -158,13 +149,11 @@ mod tests {
             vec![0.10, 0.12, 1.00],
         ];
 
-        // La col 1 tiene mayor score causal que la col 0
         let scores = vec![0.02, 0.08, 0.05];
 
         let pruner = CollinearityPruner::new(0.85);
         let selected = pruner.prune_features(&corr_matrix, Some(&scores));
 
-        // Debe seleccionar col 1 (por mayor score) y col 2
         assert_eq!(selected, vec![1, 2]);
     }
 
@@ -189,13 +178,20 @@ mod tests {
         let n_rows = 2;
         let n_cols = 4;
         let flat = vec![
-            1.0, 2.0, 3.0, 4.0, // Fila 0
-            5.0, 6.0, 7.0, 8.0, // Fila 1
+            1.0, 2.0, 3.0, 4.0,
+            5.0, 6.0, 7.0, 8.0,
         ];
 
         let selected = vec![0, 2];
         let pruned = CollinearityPruner::prune_matrix(&flat, n_rows, n_cols, &selected);
 
         assert_eq!(pruned, vec![1.0, 3.0, 5.0, 7.0]);
+    }
+
+    #[test]
+    fn test_prune_matrix_bounds_checks() {
+        let flat = vec![1.0, 2.0, 3.0, 4.0];
+        assert!(CollinearityPruner::prune_matrix(&flat, 2, 4, &[0]).is_empty());
+        assert!(CollinearityPruner::prune_matrix(&flat, 2, 2, &[0, 2]).is_empty());
     }
 }

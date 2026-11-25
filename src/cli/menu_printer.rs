@@ -14,9 +14,10 @@ impl MenuPrinter {
         println!("  [6] Decision Tree CART - Árbol de Decisión Causal Determinista");
         println!("  [7] Baseline           - Estrategia Heurística de Referencia (EMA)");
         println!("  [8] Config             - Margen, Apalancamiento, Sizing, Métricas Fitness");
+        println!("  [9] HMM Dual Hedge     - Régimen Causal Gaussian HMM 3-Estados (L+S)");
         println!("  [0] Salir");
         println!("===============================================================");
-        print!("Selecciona una opción [0-8]: ");
+        print!("Selecciona una opción [0-9]: ");
     }
 
     pub fn print_db_menu() {

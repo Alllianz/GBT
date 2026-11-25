@@ -193,6 +193,21 @@ impl FullBacktestRunner {
             ));
         }
 
+        if oos_result.metrics.final_capital <= 0.0 {
+            for (idx, candle) in full_klines.iter().enumerate().skip(combined_equity.len()) {
+                let dd_nom = peak_equity;
+                let dd_pct = 100.0;
+                combined_equity.push(EquityPoint::new(
+                    candle.timestamp,
+                    idx,
+                    0.0,
+                    0.0,
+                    dd_nom,
+                    dd_pct,
+                ));
+            }
+        }
+
         // 5. Cálculo de Métricas Consolidadas
         let combined_metrics = MetricsCalculator::calculate(
             config.initial_capital,
@@ -517,6 +532,71 @@ mod tests {
                 split.test_start,
                 oos_trade.entry_candle_idx
             );
+        }
+    }
+
+    struct OosOnlyBankruptStrategy {
+        start_idx: usize,
+    }
+
+    impl Strategy for OosOnlyBankruptStrategy {
+        fn name(&self) -> &str {
+            "OosOnlyBankruptStrategy"
+        }
+        fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal {
+            let ts = history[current_idx].timestamp;
+            if current_idx >= self.start_idx {
+                Signal::new(SignalDirection::Long, 1.0, ts)
+            } else {
+                Signal::flat(ts)
+            }
+        }
+    }
+
+    #[test]
+    fn test_oos_early_bankruptcy_zero_pads_remaining_bars() {
+        let mut klines = Vec::new();
+        for i in 0..100 {
+            let price = if i == 80 { 0.01 } else { 100.0 };
+            klines.push(Kline {
+                timestamp: i as i64 * 3600,
+                open: price,
+                high: price,
+                low: price,
+                close: price,
+                volume: 50.0,
+            });
+        }
+
+        let split = crate::features::TrainTestSplit::split_chronological(&klines, 0.70, 5).unwrap();
+        let config = BacktestConfig {
+            initial_capital: 10_000.0,
+            position_sizing: crate::types::PositionSizing::PercentOfEquity(1.0),
+            leverage: 1.0,
+            ..Default::default()
+        };
+
+        let mut strat = OosOnlyBankruptStrategy { start_idx: 0 };
+        let full_res = FullBacktestRunner::run_purged_full_backtest(
+            &mut strat,
+            &split,
+            &klines,
+            &config,
+        )
+        .unwrap();
+
+        assert!(full_res.is_result.metrics.final_capital > 0.0);
+        assert_eq!(full_res.oos_result.metrics.final_capital, 0.0);
+        assert_eq!(full_res.combined_result.equity_curve.len(), klines.len());
+        assert_eq!(full_res.combined_result.metrics.final_capital, 0.0);
+        assert_eq!(full_res.combined_result.metrics.net_profit_pct, -100.0);
+        assert!((full_res.combined_result.metrics.max_drawdown_pct - 100.0).abs() < 1e-6);
+
+        for (idx, pt) in full_res.combined_result.equity_curve.iter().enumerate().skip(81) {
+            assert_eq!(pt.candle_idx, idx);
+            assert_eq!(pt.balance, 0.0);
+            assert_eq!(pt.equity, 0.0);
+            assert_eq!(pt.drawdown_pct, 100.0);
         }
     }
 }

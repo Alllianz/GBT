@@ -36,6 +36,9 @@ impl Strategy for NativeGbdtStrategy {
     }
 
     fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal {
+        if current_idx >= history.len() {
+            return Signal::flat(0);
+        }
         let ts = history[current_idx].timestamp;
 
         if !self.model.is_trained() || current_idx < 35 {
@@ -74,5 +77,18 @@ impl Strategy for NativeGbdtStrategy {
         } else {
             Signal::flat(ts)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::model_config::ModelConfig;
+
+    #[test]
+    fn test_native_strategy_oob_index_returns_flat() {
+        let mut strat = NativeGbdtStrategy::new(NativeGbdtModel::new(ModelConfig::default()));
+        let sig = strat.evaluate(&[], 0);
+        assert_eq!(sig.direction, SignalDirection::Flat);
     }
 }

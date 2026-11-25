@@ -4,13 +4,14 @@ use treeboost::model::{
     AutoBuilder, AutoConfig, AutoModel, BoostingMode, FeatureEngineeringMode, ModeSelection,
     TuningLevel, UniversalConfig,
 };
-use crate::features::{FeatureMatrix, TripleBarrierLabeler};
-use crate::types::Kline;
+use crate::features::{FeatureMatrix, H4FeatureMatrix, VolScaledLabeler};
+use crate::types::{Kline, Timeframe};
 use super::model_config::ModelConfig;
 
 pub struct TreeBoostModel {
     model: Option<AutoModel>,
     config: ModelConfig,
+    timeframe: Option<Timeframe>,
 }
 
 impl TreeBoostModel {
@@ -18,35 +19,96 @@ impl TreeBoostModel {
         Self {
             model: None,
             config,
+            timeframe: None,
+        }
+    }
+
+    pub fn with_timeframe(mut self, timeframe: Option<Timeframe>) -> Self {
+        self.timeframe = timeframe;
+        self
+    }
+
+    pub fn timeframe(&self) -> Option<Timeframe> {
+        self.timeframe
+    }
+
+    fn is_h4(&self) -> bool {
+        matches!(self.timeframe, Some(Timeframe::H4))
+    }
+
+    fn feature_names(&self) -> &'static [&'static str] {
+        if self.is_h4() {
+            &H4FeatureMatrix::FEATURE_NAMES
+        } else {
+            &FeatureMatrix::FEATURE_NAMES
+        }
+    }
+
+    fn num_features(&self) -> usize {
+        if self.is_h4() {
+            H4FeatureMatrix::num_features()
+        } else {
+            FeatureMatrix::num_features()
+        }
+    }
+
+    fn build_features(&self, klines: &[Kline]) -> (Vec<f64>, usize, usize, usize) {
+        if self.is_h4() {
+            let (matrix_flat, rows) = H4FeatureMatrix::build(klines);
+            (
+                matrix_flat,
+                rows,
+                H4FeatureMatrix::num_features(),
+                H4FeatureMatrix::WARMUP_BARS,
+            )
+        } else {
+            let (matrix_flat, rows) = FeatureMatrix::build(klines);
+            (matrix_flat, rows, FeatureMatrix::num_features(), 60)
         }
     }
 
     pub fn train(&mut self, train_klines: &[Kline]) -> Result<(), String> {
-        if train_klines.len() < 50 {
-            return Err("Se requieren al menos 50 velas para entrenar TreeBoost".to_string());
+        let min_klines = if self.is_h4() {
+            H4FeatureMatrix::WARMUP_BARS
+        } else {
+            60
+        };
+        if train_klines.len() < min_klines {
+            return Err(format!(
+                "Se requieren al menos {} velas para entrenar TreeBoost",
+                min_klines
+            ));
         }
 
-        let (matrix_flat, rows) = FeatureMatrix::build(train_klines);
-        let f_dim = FeatureMatrix::num_features();
+        let (matrix_flat, rows, f_dim, warmup) = self.build_features(train_klines);
 
         let valid_rows = rows.saturating_sub(self.config.horizon);
-        let warmup = 35;
         if valid_rows < warmup + 15 {
             return Err("Muestras insuficientes tras descontar warmup y horizonte".to_string());
         }
 
-        let y = TripleBarrierLabeler::label_regression(train_klines, self.config.horizon, self.config.commission_rate);
+        let y = VolScaledLabeler::label_vol_scaled_regression(
+            train_klines,
+            self.config.horizon,
+            self.config.commission_rate,
+            14,
+        );
         let x_slice = &matrix_flat[(warmup * f_dim)..(valid_rows * f_dim)];
         let y_slice = &y[warmup..valid_rows];
 
         self.train_from_matrix(x_slice, y_slice, f_dim)
     }
 
-    fn build_dataframe(x: &[f64], y: &[f64], num_features: usize) -> Result<DataFrame, String> {
+    fn build_dataframe_with_names(
+        x: &[f64],
+        y: &[f64],
+        num_features: usize,
+        feature_names: &[&str],
+    ) -> Result<DataFrame, String> {
         let rows = y.len();
         let mut columns: Vec<Column> = Vec::with_capacity(num_features + 1);
 
-        for (col_idx, &feature_name) in FeatureMatrix::FEATURE_NAMES.iter().take(num_features).enumerate() {
+        for (col_idx, &feature_name) in feature_names.iter().take(num_features).enumerate() {
             let mut col_values = Vec::with_capacity(rows);
             for r in 0..rows {
                 let val = x[r * num_features + col_idx];
@@ -64,6 +126,11 @@ impl TreeBoostModel {
             .map_err(|e| format!("Error creando DataFrame de Polars: {:?}", e))
     }
 
+    #[cfg(test)]
+    fn build_dataframe(x: &[f64], y: &[f64], num_features: usize) -> Result<DataFrame, String> {
+        Self::build_dataframe_with_names(x, y, num_features, &FeatureMatrix::FEATURE_NAMES)
+    }
+
     pub fn train_from_matrix(&mut self, x: &[f64], y: &[f64], num_features: usize) -> Result<(), String> {
         let valid_rows = y.len();
         if valid_rows < 15 {
@@ -77,38 +144,51 @@ impl TreeBoostModel {
             ));
         }
 
-        let (train_rows, val_start) = if valid_rows >= 40 {
-            let train_rows = (valid_rows as f64 * 0.80) as usize;
-            let purge = self.config.horizon.min(valid_rows.saturating_sub(train_rows + 5));
-            let val_start = train_rows + purge;
-            (train_rows, val_start)
-        } else {
-            let train_rows = (valid_rows * 4 / 5).max(10);
-            let val_start = train_rows;
-            (train_rows, val_start)
-        };
-
-        let train_df = Self::build_dataframe(&x[0..(train_rows * num_features)], &y[0..train_rows], num_features)?;
-        let val_df = Self::build_dataframe(&x[(val_start * num_features)..(valid_rows * num_features)], &y[val_start..valid_rows], num_features)?;
-
-        let mut u_cfg = self.build_universal_config(train_rows);
-        u_cfg.tree_config.max_depth = if train_rows < 1000 {
-            self.config.max_depth.clamp(3, 4)
-        } else {
-            self.config.max_depth.clamp(2, 3)
-        };
+        let feature_names = self.feature_names();
+        let mut u_cfg = self.build_universal_config(valid_rows);
+        let early_stopping_rounds = u_cfg.early_stopping_rounds;
 
         let mut auto_cfg = AutoConfig::default();
         auto_cfg.tuning_level = TuningLevel::None;
         auto_cfg.feature_engineering = FeatureEngineeringMode::None;
         auto_cfg.mode_selection = ModeSelection::Fixed(BoostingMode::PureTree);
         auto_cfg.val_ratio = 0.0;
-        auto_cfg.custom_config = Some(u_cfg);
 
-        let build_result = AutoBuilder::with_config(auto_cfg)
-            .with_presplit_validation(val_df)
-            .fit(&train_df, "target")
-            .map_err(|e| format!("Error entrenando TreeBoost AutoModel: {:?}", e))?;
+        let purge = self.config.horizon;
+        let train_rows = (valid_rows as f64 * 0.80) as usize;
+        let val_start = train_rows.saturating_add(purge);
+        let can_presplit = early_stopping_rounds > 0
+            && train_rows >= 15
+            && valid_rows.saturating_sub(val_start) >= 5;
+
+        let build_result = if !can_presplit {
+            u_cfg.early_stopping_rounds = 0;
+            u_cfg.validation_ratio = 0.0;
+            let train_df = Self::build_dataframe_with_names(x, y, num_features, feature_names)?;
+            auto_cfg.custom_config = Some(u_cfg);
+            AutoBuilder::with_config(auto_cfg)
+                .fit(&train_df, "target")
+                .map_err(|e| format!("Error entrenando TreeBoost AutoModel: {:?}", e))?
+        } else {
+            let train_df = Self::build_dataframe_with_names(
+                &x[0..(train_rows * num_features)],
+                &y[0..train_rows],
+                num_features,
+                feature_names,
+            )?;
+            let val_df = Self::build_dataframe_with_names(
+                &x[(val_start * num_features)..(valid_rows * num_features)],
+                &y[val_start..valid_rows],
+                num_features,
+                feature_names,
+            )?;
+            let u_cfg_split = self.build_universal_config(train_rows);
+            auto_cfg.custom_config = Some(u_cfg_split);
+            AutoBuilder::with_config(auto_cfg)
+                .with_presplit_validation(val_df)
+                .fit(&train_df, "target")
+                .map_err(|e| format!("Error entrenando TreeBoost AutoModel: {:?}", e))?
+        };
 
         let trained_auto_model = AutoModel::from_build_result(build_result)
             .map_err(|e| format!("Error construyendo AutoModel desde BuildResult: {:?}", e))?;
@@ -123,35 +203,27 @@ impl TreeBoostModel {
         let mut tree_config = TreeConfig::default();
         tree_config.max_depth = max_depth;
         tree_config.max_leaves = max_leaves;
-        tree_config.lambda = if train_rows >= 60 {
-            (train_rows as f32 * 0.002).clamp(1.0, 8.0)
-        } else {
-            1.0
-        };
-        tree_config.min_samples_leaf = if train_rows >= 60 {
-            (train_rows / 70).clamp(6, 20)
-        } else {
-            5
-        };
-        tree_config.post_pruning_gamma = 0.0;
-        tree_config.min_gain = (self.config.min_split_gain as f32).max(0.0);
+        tree_config.lambda = (self.config.l2_regularization * 300.0).clamp(20.0, 80.0) as f32;
+        tree_config.min_samples_leaf = (train_rows / 25).clamp(40, 160);
+        tree_config.post_pruning_gamma = 0.03;
+        tree_config.min_gain = 0.02;
         tree_config.entropy_weight = 0.0;
 
         let mut u_cfg = UniversalConfig::default();
         u_cfg.mode = BoostingMode::PureTree;
-        u_cfg.num_rounds = self.config.num_trees.clamp(35, 55);
-        u_cfg.learning_rate = (self.config.learning_rate as f32).clamp(0.02, 0.04);
-        u_cfg.subsample = 0.65;
-        u_cfg.colsample = 0.60;
+        u_cfg.num_rounds = self.config.num_trees.clamp(25, 45);
+        u_cfg.learning_rate = self.config.learning_rate.clamp(0.015, 0.03);
+        u_cfg.subsample = 0.50;
+        u_cfg.colsample = 0.50;
         u_cfg.validation_ratio = 0.0;
-        u_cfg.early_stopping_rounds = 0;
+        u_cfg.early_stopping_rounds = 6;
         u_cfg.tree_config = tree_config;
         u_cfg
     }
 
     pub fn predict_single(&self, feature_vec: &[f64]) -> Result<f64, String> {
         let model = self.model.as_ref().ok_or_else(|| "Modelo TreeBoost no entrenado".to_string())?;
-        let f_dim = FeatureMatrix::num_features();
+        let f_dim = self.num_features();
 
         if feature_vec.len() != f_dim {
             return Err(format!(
@@ -162,7 +234,7 @@ impl TreeBoostModel {
         }
 
         let mut columns: Vec<Column> = Vec::with_capacity(f_dim);
-        for (col_idx, &feature_name) in FeatureMatrix::FEATURE_NAMES.iter().enumerate() {
+        for (col_idx, &feature_name) in self.feature_names().iter().enumerate() {
             let val = vec![feature_vec[col_idx]];
             let s = Series::new(feature_name.into(), val);
             columns.push(s.into());
@@ -192,8 +264,7 @@ impl TreeBoostModel {
         if self.model.is_none() {
             return Err("Modelo TreeBoost no entrenado".to_string());
         }
-        let (matrix_flat, rows) = FeatureMatrix::build(klines);
-        let f_dim = FeatureMatrix::num_features();
+        let (matrix_flat, rows, f_dim, _) = self.build_features(klines);
 
         if rows == 0 || matrix_flat.is_empty() {
             return Ok(Vec::new());
@@ -204,14 +275,21 @@ impl TreeBoostModel {
 
     pub fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
         let model = self.model.as_ref().ok_or_else(|| "Modelo TreeBoost no entrenado".to_string())?;
-        if x.is_empty() || num_features == 0 {
+        if x.is_empty() {
             return Ok(Vec::new());
+        }
+        if num_features == 0 || x.len() % num_features != 0 {
+            return Err(format!(
+                "Dimensión inconsistente en predict_from_matrix: {} no es múltiplo de {}",
+                x.len(),
+                num_features
+            ));
         }
 
         let rows = x.len() / num_features;
         let mut columns: Vec<Column> = Vec::with_capacity(num_features);
 
-        for (col_idx, &feature_name) in FeatureMatrix::FEATURE_NAMES.iter().take(num_features).enumerate() {
+        for (col_idx, &feature_name) in self.feature_names().iter().take(num_features).enumerate() {
             let mut col_values = Vec::with_capacity(rows);
             for r in 0..rows {
                 let val = x[r * num_features + col_idx];
@@ -348,46 +426,76 @@ mod tests {
         };
         let model = TreeBoostModel::new(config);
         let u_small = model.build_universal_config(40);
-        assert_eq!(u_small.num_rounds, 55);
-        assert!((u_small.learning_rate - 0.04).abs() < 1e-6);
-        assert!((u_small.subsample - 0.65).abs() < 1e-6);
-        assert!((u_small.colsample - 0.60).abs() < 1e-6);
-        assert_eq!(u_small.early_stopping_rounds, 0);
+        assert_eq!(u_small.num_rounds, 45);
+        assert!((u_small.learning_rate - 0.03).abs() < 1e-6);
+        assert!((u_small.subsample - 0.50).abs() < 1e-6);
+        assert!((u_small.colsample - 0.50).abs() < 1e-6);
+        assert_eq!(u_small.early_stopping_rounds, 6);
         assert_eq!(u_small.tree_config.max_depth, 3);
         assert_eq!(u_small.tree_config.max_leaves, 8);
-        assert!((u_small.tree_config.lambda - 1.0).abs() < 1e-6);
-        assert_eq!(u_small.tree_config.min_samples_leaf, 5);
-        assert!((u_small.tree_config.post_pruning_gamma - 0.0).abs() < 1e-6);
+        assert!((u_small.tree_config.lambda - 20.0).abs() < 1e-6);
+        assert_eq!(u_small.tree_config.min_samples_leaf, 40);
+        assert!((u_small.tree_config.post_pruning_gamma - 0.03).abs() < 1e-6);
+        assert!((u_small.tree_config.min_gain - 0.02).abs() < 1e-6);
         assert!((u_small.tree_config.entropy_weight - 0.0).abs() < 1e-6);
 
         let low_cfg = ModelConfig {
             num_trees: 5,
             max_depth: 1,
             learning_rate: 0.001,
-            l2_regularization: 0.05,
+            l2_regularization: 0.10,
             ..Default::default()
         };
         let low_model = TreeBoostModel::new(low_cfg);
-        let u_large = low_model.build_universal_config(1000);
-        assert_eq!(u_large.num_rounds, 35);
-        assert!((u_large.learning_rate - 0.02).abs() < 1e-6);
+        let u_large = low_model.build_universal_config(1600);
+        assert_eq!(u_large.num_rounds, 25);
+        assert!((u_large.learning_rate - 0.015).abs() < 1e-6);
         assert_eq!(u_large.tree_config.max_depth, 2);
         assert_eq!(u_large.tree_config.max_leaves, 4);
-        assert!((u_large.tree_config.lambda - 2.0).abs() < 1e-6);
-        assert_eq!(u_large.tree_config.min_samples_leaf, 14);
+        assert!((u_large.tree_config.lambda - 30.0).abs() < 1e-6);
+        assert_eq!(u_large.tree_config.min_samples_leaf, 64);
 
-        let u_capped = low_model.build_universal_config(4000);
-        assert_eq!(u_capped.tree_config.min_samples_leaf, 20);
-        assert!((u_capped.tree_config.lambda - 8.0).abs() < 1e-6);
-        let u_min_leaf = low_model.build_universal_config(60);
-        assert_eq!(u_min_leaf.tree_config.min_samples_leaf, 6);
-        assert!((u_min_leaf.tree_config.lambda - 1.0).abs() < 1e-6);
+        let max_reg_cfg = ModelConfig {
+            l2_regularization: 0.50,
+            ..Default::default()
+        };
+        let max_reg_model = TreeBoostModel::new(max_reg_cfg);
+        let u_capped = max_reg_model.build_universal_config(4000);
+        assert_eq!(u_capped.tree_config.min_samples_leaf, 160);
+        assert!((u_capped.tree_config.lambda - 80.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_treeboost_h4_train_and_predict() {
+        let mut cfg = ModelConfig::for_timeframe(Timeframe::H4);
+        cfg.horizon = 18;
+        let mut model = TreeBoostModel::new(cfg).with_timeframe(Some(Timeframe::H4));
+        let klines: Vec<Kline> = (0..260)
+            .map(|i| {
+                let p = 100.0 + (i as f64 * 0.15).sin() * 3.0;
+                Kline {
+                    timestamp: (i as i64 + 1) * 14400,
+                    open: p,
+                    high: p + 1.0,
+                    low: p - 1.0,
+                    close: p + 0.2,
+                    volume: 1000.0 + (i as f64) * 5.0,
+                }
+            })
+            .collect();
+        model.train(&klines).expect("H4 TreeBoost training should succeed");
+        let preds = model.predict_batch(&klines).expect("H4 predict_batch should succeed");
+        assert_eq!(preds.len(), klines.len());
+        let single_vec = H4FeatureMatrix::extract_single_vector(&klines, 200).unwrap();
+        let single_pred = model.predict_single(&single_vec).expect("H4 predict_single should succeed");
+        assert!(single_pred.is_finite());
+        assert!(model.predict_single(&[0.0; 5]).is_err());
     }
 
     #[test]
     fn test_treeboost_train_skips_warmup_rows() {
         let mut model = TreeBoostModel::new(ModelConfig::default());
-        let short_klines: Vec<Kline> = (0..52)
+        let short_klines: Vec<Kline> = (0..60)
             .map(|i| {
                 let p = 100.0 + (i as f64) * 0.1;
                 Kline {
@@ -401,6 +509,21 @@ mod tests {
             })
             .collect();
         assert!(model.train(&short_klines).is_err());
+
+        let borderline_klines: Vec<Kline> = (0..75)
+            .map(|i| {
+                let p = 100.0 + (i as f64) * 0.1;
+                Kline {
+                    timestamp: (i as i64 + 1) * 3600,
+                    open: p,
+                    high: p + 0.5,
+                    low: p - 0.5,
+                    close: p,
+                    volume: 1000.0,
+                }
+            })
+            .collect();
+        assert!(model.train(&borderline_klines).is_err());
 
         let enough_klines: Vec<Kline> = (0..90)
             .map(|i| {
@@ -418,5 +541,8 @@ mod tests {
         let res = model.train(&enough_klines);
         assert!(res.is_ok());
         assert!(model.is_trained());
+
+        let f_dim = FeatureMatrix::num_features();
+        assert!(model.predict_from_matrix(&vec![0.0; f_dim + 1], f_dim).is_err());
     }
 }

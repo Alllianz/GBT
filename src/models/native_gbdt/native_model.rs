@@ -42,21 +42,24 @@ impl NativeGbdtModel {
         self
     }
 
-    /// Entrenamiento Causal con Regularización Completa y Parada Temprana Automática
     pub fn train(&mut self, train_klines: &[Kline]) -> Result<(), String> {
+        const WARMUP: usize = 60;
         let n = train_klines.len();
-        if n < 50 {
-            return Err("Se requieren al menos 50 velas para entrenar Native GBDT".to_string());
+        if n <= WARMUP {
+            return Err("Se requieren más de 60 velas para entrenar Native GBDT".to_string());
         }
 
-        // Si disponemos de suficientes muestras, dividimos internamente en Train y Causal Validation con Purga
-        if n >= 90 {
-            let train_ratio = 0.85;
+        let min_val_len = WARMUP + self.config.horizon + 10;
+        if n >= 160 {
+            let train_ratio = 0.80;
             let purge_bars = self.config.horizon + 1;
             let train_end = ((n as f64) * train_ratio).round() as usize;
             let val_start = train_end + purge_bars;
 
-            if val_start < n && (n - val_start) >= 15 {
+            if train_end >= WARMUP + self.config.horizon + 15
+                && val_start < n
+                && (n - val_start) >= min_val_len
+            {
                 let inner_train = &train_klines[0..train_end];
                 let inner_val = &train_klines[val_start..n];
                 return self.train_with_validation(inner_train, inner_val, 15);
@@ -66,14 +69,17 @@ impl NativeGbdtModel {
         self.train_direct(train_klines)
     }
 
-    /// Entrenamiento directo sobre el conjunto provisto con submuestreo estocástico y regularización
     pub fn train_direct(&mut self, train_klines: &[Kline]) -> Result<(), String> {
+        const WARMUP: usize = 60;
+        if train_klines.len() <= WARMUP {
+            return Err("Muestras insuficientes tras descontar el warmup".to_string());
+        }
         let (matrix_flat, rows) = FeatureMatrix::build(train_klines);
         let f_dim = FeatureMatrix::num_features();
 
-        let valid_rows = rows.saturating_sub(self.config.horizon);
-        if valid_rows < 30 {
-            return Err("Muestras insuficientes tras descontar el horizonte".to_string());
+        let valid_end = rows.saturating_sub(self.config.horizon);
+        if valid_end <= WARMUP || (valid_end - WARMUP) < 15 {
+            return Err("Muestras insuficientes tras descontar warmup y horizonte".to_string());
         }
 
         let y = TripleBarrierLabeler::label_regression(
@@ -81,8 +87,8 @@ impl NativeGbdtModel {
             self.config.horizon,
             self.config.commission_rate,
         );
-        let x_slice = &matrix_flat[0..(valid_rows * f_dim)];
-        let y_slice = &y[0..valid_rows];
+        let x_slice = &matrix_flat[(WARMUP * f_dim)..(valid_end * f_dim)];
+        let y_slice = &y[WARMUP..valid_end];
 
         self.train_from_matrix(x_slice, y_slice, f_dim)
     }
@@ -107,8 +113,15 @@ impl NativeGbdtModel {
             ));
         }
 
-        // 1. Predicción base F_0 = promedio de y
-        self.base_score = y.iter().sum::<f64>() / valid_rows as f64;
+        let (finite_sum, finite_count) = y
+            .iter()
+            .copied()
+            .filter(|v| v.is_finite())
+            .fold((0.0_f64, 0usize), |(s, c), v| (s + v, c + 1));
+        if finite_count == 0 {
+            return Err("Todas las etiquetas y son no finitas".to_string());
+        }
+        self.base_score = finite_sum / finite_count as f64;
 
         let mut current_preds = vec![self.base_score; valid_rows];
         self.trees.clear();
@@ -117,11 +130,10 @@ impl NativeGbdtModel {
         let num_trees = self.config.num_trees.min(200);
 
         for m in 0..num_trees {
-            // 2. Residuales negativos: r_i = y_i - F(x_i)
             let residuals: Vec<f64> = y
                 .iter()
                 .zip(&current_preds)
-                .map(|(&target, &pred)| target - pred)
+                .map(|(&target, &pred)| if target.is_finite() { target - pred } else { 0.0 })
                 .collect();
 
             let seed_m = 42u64.wrapping_add((m as u64).wrapping_mul(1_000_003));
@@ -177,18 +189,21 @@ impl NativeGbdtModel {
         Ok(())
     }
 
-    /// Entrenamiento con conjunto de validación causal y parada temprana
     pub fn train_with_validation(
         &mut self,
         train_klines: &[Kline],
         val_klines: &[Kline],
         patience: usize,
     ) -> Result<(), String> {
+        const WARMUP: usize = 60;
+        if train_klines.len() <= WARMUP {
+            return Err("Muestras de entrenamiento insuficientes tras warmup".to_string());
+        }
         let (train_matrix, train_rows) = FeatureMatrix::build(train_klines);
         let f_dim = FeatureMatrix::num_features();
-        let train_valid = train_rows.saturating_sub(self.config.horizon);
+        let train_valid_end = train_rows.saturating_sub(self.config.horizon);
 
-        if train_valid < 30 {
+        if train_valid_end <= WARMUP || (train_valid_end - WARMUP) < 15 {
             return Err("Muestras de entrenamiento insuficientes".to_string());
         }
 
@@ -197,12 +212,16 @@ impl NativeGbdtModel {
             self.config.horizon,
             self.config.commission_rate,
         );
-        let x_train_slice = &train_matrix[0..(train_valid * f_dim)];
-        let y_train_slice = &y_train[0..train_valid];
+        let x_train_slice = &train_matrix[(WARMUP * f_dim)..(train_valid_end * f_dim)];
+        let y_train_slice = &y_train[WARMUP..train_valid_end];
+        let train_valid = y_train_slice.len();
 
+        if val_klines.len() <= WARMUP {
+            return self.train_direct(train_klines);
+        }
         let (val_matrix, val_rows) = FeatureMatrix::build(val_klines);
-        let val_valid = val_rows.saturating_sub(self.config.horizon);
-        if val_valid < 10 {
+        let val_valid_end = val_rows.saturating_sub(self.config.horizon);
+        if val_valid_end <= WARMUP || (val_valid_end - WARMUP) < 10 {
             return self.train_direct(train_klines);
         }
 
@@ -211,10 +230,19 @@ impl NativeGbdtModel {
             self.config.horizon,
             self.config.commission_rate,
         );
-        let x_val_slice = &val_matrix[0..(val_valid * f_dim)];
-        let y_val_slice = &y_val[0..val_valid];
+        let x_val_slice = &val_matrix[(WARMUP * f_dim)..(val_valid_end * f_dim)];
+        let y_val_slice = &y_val[WARMUP..val_valid_end];
+        let val_valid = y_val_slice.len();
 
-        self.base_score = y_train_slice.iter().sum::<f64>() / train_valid as f64;
+        let (finite_sum, finite_count) = y_train_slice
+            .iter()
+            .copied()
+            .filter(|v| v.is_finite())
+            .fold((0.0_f64, 0usize), |(s, c), v| (s + v, c + 1));
+        if finite_count == 0 {
+            return Err("Todas las etiquetas de entrenamiento son no finitas".to_string());
+        }
+        self.base_score = finite_sum / finite_count as f64;
 
         let mut train_preds = vec![self.base_score; train_valid];
         let mut val_preds = vec![self.base_score; val_valid];
@@ -229,7 +257,7 @@ impl NativeGbdtModel {
             let residuals: Vec<f64> = y_train_slice
                 .iter()
                 .zip(&train_preds)
-                .map(|(&target, &pred)| target - pred)
+                .map(|(&target, &pred)| if target.is_finite() { target - pred } else { 0.0 })
                 .collect();
 
             let seed_m = 42u64.wrapping_add((m as u64).wrapping_mul(1_000_003));
@@ -274,15 +302,22 @@ impl NativeGbdtModel {
                     *pred += lr * tree.predict(row_feats);
                 });
 
-            // Actualizar validation predictions y calcular MSE causal
             let mut val_mse_sum = 0.0;
+            let mut val_mse_count = 0usize;
             for r in 0..val_valid {
                 let row_feats = &x_val_slice[(r * f_dim)..((r + 1) * f_dim)];
                 val_preds[r] += lr * tree.predict(row_feats);
-                let diff = y_val_slice[r] - val_preds[r];
-                val_mse_sum += diff * diff;
+                if y_val_slice[r].is_finite() {
+                    let diff = y_val_slice[r] - val_preds[r];
+                    val_mse_sum += diff * diff;
+                    val_mse_count += 1;
+                }
             }
-            let val_mse = val_mse_sum / val_valid as f64;
+            let val_mse = if val_mse_count > 0 {
+                val_mse_sum / val_mse_count as f64
+            } else {
+                f64::INFINITY
+            };
 
             self.trees.push(tree);
 
@@ -321,13 +356,19 @@ impl NativeGbdtModel {
         self.predict_from_matrix(&matrix_flat, f_dim)
     }
 
-    /// Inferencia vectorizada a partir de una matriz plana pre-computada [N x num_features]
     pub fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
         if !self.is_trained {
             return Err("Native GBDT no está entrenado".to_string());
         }
-        if x.is_empty() || num_features == 0 {
+        if x.is_empty() {
             return Ok(Vec::new());
+        }
+        if num_features == 0 || x.len() % num_features != 0 {
+            return Err(format!(
+                "Dimensión inconsistente en predict_from_matrix: {} no es múltiplo de {}",
+                x.len(),
+                num_features
+            ));
         }
 
         let rows = x.len() / num_features;
@@ -386,5 +427,47 @@ impl NativeGbdtModel {
 
     pub fn set_thresholds(&mut self, long_th: f64, short_th: f64) {
         self.config.set_thresholds(long_th, short_th);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_klines(n: usize) -> Vec<Kline> {
+        (0..n)
+            .map(|i| {
+                let p = 100.0 + (i as f64 * 0.1).sin() * 2.0;
+                Kline {
+                    timestamp: (i as i64 + 1) * 3600,
+                    open: p,
+                    high: p + 0.5,
+                    low: p - 0.5,
+                    close: p + 0.1,
+                    volume: 1000.0,
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_native_gbdt_warmup_nonfinite_y_and_matrix_validation() {
+        let mut model = NativeGbdtModel::new(ModelConfig::default());
+        assert!(model.train(&sample_klines(60)).is_err());
+        assert!(model.train_direct(&sample_klines(60)).is_err());
+        assert!(model.train(&sample_klines(90)).is_ok());
+
+        let f_dim = FeatureMatrix::num_features();
+        assert!(model.predict_from_matrix(&vec![0.0; f_dim + 1], f_dim).is_err());
+
+        let mut nan_model = NativeGbdtModel::new(ModelConfig::default());
+        let rows = 20;
+        let x = vec![0.1; rows * f_dim];
+        let mut y = vec![0.02; rows];
+        y[0] = f64::NAN;
+        y[1] = f64::INFINITY;
+        assert!(nan_model.train_from_matrix(&x, &y, f_dim).is_ok());
+        let pred = nan_model.predict_single(&vec![0.1; f_dim]).unwrap();
+        assert!(pred.is_finite());
     }
 }

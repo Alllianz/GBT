@@ -3,7 +3,7 @@ use crate::models::forust_model::ForustModel;
 use crate::models::native_gbdt::NativeGbdtModel;
 use crate::models::random_forest::RandomForestModel;
 use crate::models::treeboost_model::TreeBoostModel;
-use crate::types::Kline;
+use crate::types::{Kline, Timeframe};
 
 /// Trait institucional para modelos de Machine Learning entrenables y evaluables de manera causal.
 pub trait TrainableModel: Send + Sync {
@@ -21,6 +21,14 @@ pub trait TrainableModel: Send + Sync {
 
     /// Inferencia vectorizada sobre una matriz plana de features pre-computada [N x num_features]
     fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String>;
+
+    fn uses_vol_scaled_target(&self) -> bool {
+        false
+    }
+
+    fn timeframe(&self) -> Option<Timeframe> {
+        None
+    }
 }
 
 impl TrainableModel for NativeGbdtModel {
@@ -87,6 +95,14 @@ impl TrainableModel for TreeBoostModel {
     fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
         self.predict_from_matrix(x, num_features)
     }
+
+    fn uses_vol_scaled_target(&self) -> bool {
+        true
+    }
+
+    fn timeframe(&self) -> Option<Timeframe> {
+        self.timeframe()
+    }
 }
 
 impl TrainableModel for DecisionTreeModel {
@@ -131,6 +147,10 @@ impl TrainableModel for RandomForestModel {
     fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
         self.predict_from_matrix(x, num_features)
     }
+
+    fn timeframe(&self) -> Option<Timeframe> {
+        self.timeframe()
+    }
 }
 
 impl TrainableModel for Box<dyn TrainableModel> {
@@ -152,5 +172,13 @@ impl TrainableModel for Box<dyn TrainableModel> {
 
     fn predict_from_matrix(&self, x: &[f64], num_features: usize) -> Result<Vec<f64>, String> {
         (**self).predict_from_matrix(x, num_features)
+    }
+
+    fn uses_vol_scaled_target(&self) -> bool {
+        (**self).uses_vol_scaled_target()
+    }
+
+    fn timeframe(&self) -> Option<Timeframe> {
+        (**self).timeframe()
     }
 }

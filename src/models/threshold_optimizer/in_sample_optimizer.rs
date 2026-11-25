@@ -9,7 +9,8 @@
 
 use rayon::prelude::*;
 use crate::backtest::{BacktestConfig, BacktestEngine, Strategy};
-use crate::types::{FitnessMetric, Kline, Signal, SignalDirection};
+use crate::features::H4FeatureMatrix;
+use crate::types::{FitnessMetric, Kline, Signal, SignalDirection, Timeframe};
 use super::adaptive_threshold_grid::AdaptiveThresholdGrid;
 
 pub struct ThresholdOptimizer;
@@ -17,6 +18,7 @@ pub struct ThresholdOptimizer;
 struct ThresholdTestStrategy<'a> {
     predictions: &'a [f64],
     threshold: f64,
+    warmup_bars: usize,
 }
 
 impl<'a> Strategy for ThresholdTestStrategy<'a> {
@@ -25,17 +27,43 @@ impl<'a> Strategy for ThresholdTestStrategy<'a> {
     }
 
     fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal {
+        if current_idx >= history.len() {
+            return Signal::flat(0);
+        }
         let ts = history[current_idx].timestamp;
-        if current_idx >= self.predictions.len() || current_idx < 35 {
+        if current_idx >= self.predictions.len() || current_idx < self.warmup_bars {
             return Signal::flat(ts);
         }
 
         let pred = self.predictions[current_idx];
+        if !pred.is_finite() {
+            return Signal::flat(ts);
+        }
+
+        let denom = self.threshold * 3.0;
         if pred > self.threshold {
-            let strength = (pred / (self.threshold * 3.0)).clamp(0.1, 1.0);
+            let raw_strength = if denom.is_finite() && denom > 1e-9 {
+                pred / denom
+            } else {
+                0.5
+            };
+            let strength = if raw_strength.is_finite() {
+                raw_strength.clamp(0.1, 1.0)
+            } else {
+                0.5
+            };
             Signal::new(SignalDirection::Long, strength, ts)
         } else if pred < -self.threshold {
-            let strength = (pred.abs() / (self.threshold * 3.0)).clamp(0.1, 1.0);
+            let raw_strength = if denom.is_finite() && denom > 1e-9 {
+                pred.abs() / denom
+            } else {
+                0.5
+            };
+            let strength = if raw_strength.is_finite() {
+                raw_strength.clamp(0.1, 1.0)
+            } else {
+                0.5
+            };
             Signal::new(SignalDirection::Short, strength, ts)
         } else {
             Signal::flat(ts)
@@ -44,40 +72,40 @@ impl<'a> Strategy for ThresholdTestStrategy<'a> {
 }
 
 impl ThresholdOptimizer {
-    /// Rejilla estándar de umbrales estáticos para compatibilidad y fallback
     pub const THRESHOLD_GRID: [f64; 8] = [
         0.0005, 0.0010, 0.0015, 0.0020, 0.0030, 0.0040, 0.0050, 0.0070,
     ];
 
-    /// Encuentra el umbral óptimo (tau_long, tau_short) que maximiza la métrica fitness en In-Sample
-    /// Retorna: (tau_long, tau_short, score_optimo)
     pub fn optimize_in_sample(
         in_sample_predictions: &[f64],
         train_klines: &[Kline],
         fitness_metric: FitnessMetric,
         base_config: &BacktestConfig,
     ) -> (f64, f64, f64) {
-        if in_sample_predictions.is_empty() || train_klines.len() < 50 {
+        let warmup_bars = match base_config.timeframe {
+            Some(Timeframe::H4) => H4FeatureMatrix::WARMUP_BARS,
+            _ => 60,
+        };
+        if in_sample_predictions.is_empty()
+            || train_klines.len() < 50.max(warmup_bars.saturating_add(2))
+        {
             return (0.002, -0.002, 0.0);
         }
 
-        // 1. Obtener rejilla adaptativa basada en la distribución real de predicciones
         let grid = AdaptiveThresholdGrid::compute_symmetric_grid(in_sample_predictions);
 
-        // 2. Umbral mínimo de significancia estadística en operaciones
         let min_trades = if train_klines.len() < 100 { 3 } else { 5 };
 
-        // 3. Evaluación concurrente de todos los umbrales candidatos con Rayon
-        // Retorna (th, score, trades_count)
         let candidates: Vec<(f64, f64, usize)> = grid
             .into_par_iter()
             .map(|th| {
                 let mut strat = ThresholdTestStrategy {
                     predictions: in_sample_predictions,
                     threshold: th,
+                    warmup_bars,
                 };
                 let engine = BacktestEngine::new(base_config.clone());
-                match engine.run(&mut strat, train_klines) {
+                match engine.run_with_warmup(&mut strat, train_klines, warmup_bars) {
                     Ok(res) => {
                         let score = fitness_metric.evaluate(&res.metrics);
                         (th, score, res.metrics.total_trades)
@@ -176,7 +204,41 @@ mod tests {
 
         assert!(th_long > 0.0, "tau_long debe ser positivo");
         assert!(th_short < 0.0, "tau_short debe ser negativo");
-        // Con la grilla adaptativa, el umbral debe adaptarse al rango de 0.0008
         assert!(th_long <= 0.0015, "tau_long no debe ser inalcanzable ({})", th_long);
+    }
+
+    #[test]
+    fn test_threshold_strategy_guards_zero_threshold_and_non_finite_pred() {
+        let klines: Vec<Kline> = (0..70)
+            .map(|i| Kline {
+                timestamp: (i as i64 + 1) * 3600,
+                open: 100.0,
+                high: 101.0,
+                low: 99.0,
+                close: 100.0,
+                volume: 1000.0,
+            })
+            .collect();
+        let mut preds = vec![0.05; 70];
+        preds[65] = f64::NAN;
+        preds[66] = f64::INFINITY;
+
+        let mut strat = ThresholdTestStrategy {
+            predictions: &preds,
+            threshold: 0.0,
+            warmup_bars: 60,
+        };
+        let sig_zero = strat.evaluate(&klines, 61);
+        assert_eq!(sig_zero.direction, SignalDirection::Long);
+        assert!(sig_zero.strength.is_finite());
+
+        let sig_nan = strat.evaluate(&klines, 65);
+        assert_eq!(sig_nan.direction, SignalDirection::Flat);
+
+        let sig_inf = strat.evaluate(&klines, 66);
+        assert_eq!(sig_inf.direction, SignalDirection::Flat);
+
+        let sig_oob = strat.evaluate(&klines, 100);
+        assert_eq!(sig_oob.direction, SignalDirection::Flat);
     }
 }

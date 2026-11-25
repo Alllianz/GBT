@@ -2,14 +2,14 @@
 pub fn get_styles() -> &'static str {
     r#"
         :root {
-            --bg-color: #0b0e14;
-            --card-bg: #151922;
-            --card-header: #1b202c;
-            --border-color: #232936;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --accent-is: #a371f7;
-            --accent-oos: #2f81f7;
+            --bg-color: #000000;
+            --card-bg: #050505;
+            --card-header: #0a0a0a;
+            --border-color: #141b2d;
+            --text-primary: #f0f4ff;
+            --text-secondary: #8a94a6;
+            --accent-is: #3b82f6;
+            --accent-oos: #0055ff;
             --accent-green: #3fb950;
             --accent-red: #f85149;
             --accent-yellow: #d29922;
@@ -31,18 +31,19 @@ pub fn get_styles() -> &'static str {
         }
         .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
         .header .badge {
-            background: #212631;
+            background: #050505;
+            border: 1px solid rgba(0, 85, 255, 0.45);
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 13px;
-            color: var(--text-secondary);
+            color: #2e7dff;
         }
 
         /* Banner de Métrica Fitness */
         .fitness-banner {
             display: flex;
             align-items: center;
-            background: linear-gradient(90deg, #151922 0%, #1e2433 100%);
+            background: linear-gradient(90deg, #000000 0%, #050b1a 100%);
             border: 1px solid var(--border-color);
             border-left: 4px solid var(--accent-oos);
             border-radius: 8px;
@@ -58,7 +59,8 @@ pub fn get_styles() -> &'static str {
             color: var(--text-secondary);
             margin-top: 4px;
             font-family: monospace;
-            background: #0b0e14;
+            background: #000000;
+            border: 1px solid var(--border-color);
             padding: 2px 8px;
             border-radius: 4px;
             display: inline-block;
@@ -72,14 +74,14 @@ pub fn get_styles() -> &'static str {
             text-align: center;
         }
         .fitness-pill.is {
-            background: rgba(163, 113, 247, 0.15);
+            background: rgba(59, 130, 246, 0.14);
             color: var(--accent-is);
-            border: 1px solid rgba(163, 113, 247, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.35);
         }
         .fitness-pill.oos {
-            background: rgba(47, 129, 247, 0.15);
-            color: var(--accent-oos);
-            border: 1px solid rgba(47, 129, 247, 0.3);
+            background: rgba(0, 85, 255, 0.18);
+            color: #2e7dff;
+            border: 1px solid rgba(0, 85, 255, 0.45);
         }
 
         /* Barra de comparación rápida IS vs OOS */
@@ -119,9 +121,40 @@ pub fn get_styles() -> &'static str {
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
+            gap: 12px;
+            flex-wrap: wrap;
         }
         .chart-title { font-size: 16px; font-weight: 600; margin: 0; }
+        .chart-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
         .chart-legend-custom { font-size: 12px; color: var(--text-secondary); }
+        .scale-toggle-btn {
+            background: var(--card-header);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+        .scale-toggle-btn:hover:not(:disabled) {
+            color: var(--text-primary);
+            border-color: var(--accent-oos);
+        }
+        .scale-toggle-btn.active {
+            background: rgba(0, 85, 255, 0.18);
+            color: #2e7dff;
+            border-color: var(--accent-oos);
+        }
+        .scale-toggle-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
         .chart-wrapper { height: 380px; position: relative; }
         .chart-wrapper-small { height: 180px; position: relative; }
 
@@ -142,7 +175,7 @@ pub fn get_styles() -> &'static str {
             border-bottom: 1px solid var(--border-color);
         }
         .metrics-table th { background: var(--card-header); color: var(--text-secondary); }
-        .metrics-table tr:hover { background: #1a1f2c; }
+        .metrics-table tr:hover { background: rgba(0, 85, 255, 0.08); }
         .metrics-table .num { text-align: right; }
 
         /* Pestañas de Trades */
@@ -161,7 +194,7 @@ pub fn get_styles() -> &'static str {
             font-weight: 500;
         }
         .tab-btn.active {
-            background: #212631;
+            background: rgba(0, 85, 255, 0.18);
             color: var(--text-primary);
             border-color: var(--accent-oos);
         }
@@ -183,7 +216,7 @@ pub fn get_styles() -> &'static str {
             border-bottom: 1px solid var(--border-color);
         }
         .trades-table th { background: var(--card-header); color: var(--text-secondary); }
-        .trades-table tr:hover { background: #1c222e; }
+        .trades-table tr:hover { background: rgba(0, 85, 255, 0.08); }
 
         .badge.long { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); padding: 2px 6px; border-radius: 4px; }
         .badge.short { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); padding: 2px 6px; border-radius: 4px; }

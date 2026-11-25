@@ -156,15 +156,28 @@ impl CartTree {
         node_seed: u64,
     ) -> TreeNode {
         let n_samples = indices.len();
-        let sum_y: f64 = indices.iter().map(|&i| y[i]).sum();
+        let mut sum_y = 0.0;
+        let mut valid_n = 0usize;
+        for &i in indices {
+            if let Some(&val) = y.get(i) {
+                if val.is_finite() {
+                    sum_y += val;
+                    valid_n += 1;
+                }
+            }
+        }
 
-        // Asignación de peso en la hoja mediante contracción analítica L1/L2
-        let leaf_value = LeafPenaltyCalculator::compute_leaf_weight_sum(
-            sum_y,
-            n_samples,
-            reg.l1_alpha,
-            reg.l2_lambda,
-        );
+        let raw_leaf = if valid_n == 0 {
+            0.0
+        } else {
+            LeafPenaltyCalculator::compute_leaf_weight_sum(
+                sum_y,
+                valid_n,
+                reg.l1_alpha,
+                reg.l2_lambda,
+            )
+        };
+        let leaf_value = if raw_leaf.is_finite() { raw_leaf } else { 0.0 };
 
         if current_depth >= max_depth || n_samples < min_samples_leaf * 2 {
             return TreeNode::Leaf {
@@ -243,7 +256,7 @@ impl CartTree {
         };
 
         if let Some(split) = split_candidate {
-            if split.gain < reg.min_split_gain {
+            if !reg.is_regularized() && split.gain < reg.min_split_gain {
                 return TreeNode::Leaf {
                     value: leaf_value,
                     samples: n_samples,
@@ -302,5 +315,32 @@ impl CartTree {
             Some(node) => node.predict(features),
             None => 0.0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cart_tree_regularized_avoids_double_min_split_gain_penalty() {
+        let x: Vec<f64> = (0..20).map(|i| i as f64).collect();
+        let y: Vec<f64> = (0..20).map(|i| if i < 10 { -1.0 } else { 1.0 }).collect();
+        let indices: Vec<usize> = (0..20).collect();
+
+        let reg = TreeRegularizationConfig::new()
+            .with_l1(0.0)
+            .with_l2(1.0)
+            .with_min_child_weight(1.0)
+            .with_min_split_gain(5.5);
+        assert!(reg.is_regularized());
+
+        let candidate = RegularizedSplitFinder::find_best_split(&x, &y, &indices, 1, None, 2, &reg)
+            .expect("split gain after single gamma subtraction should be positive");
+        assert!(candidate.gain < reg.min_split_gain);
+
+        let mut tree = CartTree::new_regularized(2, 2, reg, 42);
+        tree.fit(&x, &y, 1, None);
+        assert!(matches!(tree.root, Some(TreeNode::Split { .. })));
     }
 }

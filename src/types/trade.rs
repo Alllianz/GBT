@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use super::position::PositionSide;
+use super::trade_regime::TradeRegime;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CompletedTrade {
@@ -26,6 +27,8 @@ pub struct CompletedTrade {
     pub entry_candle_idx: usize,
     #[serde(default)]
     pub exit_candle_idx: usize,
+    #[serde(default)]
+    pub regime: TradeRegime,
 }
 
 impl CompletedTrade {

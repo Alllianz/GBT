@@ -62,13 +62,8 @@ impl CompositeScoreCalculator {
         let net_pnl = final_capital - initial_capital;
 
         if net_pnl > 0.0 {
-            // Rendimiento estrictamente positivo:
-            // raw_ratio: Capital acumulado respecto al Max Drawdown sufrido
-            let raw_ratio = final_capital / safe_max_dd;
-            let capital_to_maxdd = raw_ratio.min(100.0);
-
-            // Normalización armónica: ratio escalado en [0.0, 1.0] para equilibrar el 50% con R²
-            let normalized_cap_dd = (capital_to_maxdd / 100.0).clamp(0.0, 1.0);
+            let capital_to_maxdd = (final_capital / safe_max_dd).min(100.0);
+            let normalized_cap_dd = (capital_to_maxdd / (capital_to_maxdd + 10.0)).clamp(0.0, 1.0);
             let composite_score = (0.5 * linearity) + (0.5 * normalized_cap_dd);
             (capital_to_maxdd, composite_score)
         } else if net_pnl == 0.0 {

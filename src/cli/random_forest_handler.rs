@@ -1,7 +1,8 @@
 use rusqlite::Connection;
 use crate::backtest::{BacktestConfig, BacktestEngine, BacktestReport, WalkForwardResult};
 use crate::dashboard::{DashboardGenerator, EquityCurveExporter};
-use crate::features::TrainTestSplit;
+use crate::features::{H4FeatureMatrix, TrainTestSplit};
+use crate::microstructure::OrderExecutionType;
 use crate::models::{ModelConfig, RandomForestModel, RandomForestStrategy};
 use crate::storage::KlineRepository;
 use crate::types::Timeframe;
@@ -37,24 +38,35 @@ impl RandomForestHandler {
         let default_comm = ModelConfig::default().commission_rate;
         if (m_cfg.commission_rate - default_comm).abs() > 1e-12 {
             active_m_cfg.commission_rate = m_cfg.commission_rate;
-        } else if (bt_cfg.commission_rate - default_comm).abs() > 1e-12 {
-            active_m_cfg.commission_rate = bt_cfg.commission_rate;
+        } else {
+            active_m_cfg.commission_rate = bt_cfg.get_commission_rate(OrderExecutionType::Taker);
         }
 
         let train_ratio = InputReader::read_with_default("Proporción In-Sample (IS) (0.70 = 70%)", 0.70);
         let purge_bars = active_m_cfg.horizon + 2;
+        let model_tf = Some(tf);
 
-        let split = TrainTestSplit::split_chronological(&klines, train_ratio, purge_bars)?;
+        let split = if tf == Timeframe::H4 {
+            TrainTestSplit::split_chronological_with_warmup(
+                &klines,
+                train_ratio,
+                purge_bars,
+                H4FeatureMatrix::WARMUP_BARS,
+            )?
+        } else {
+            TrainTestSplit::split_chronological(&klines, train_ratio, purge_bars)?
+        };
         println!("\n📊 {}", split.train_range_desc);
         println!("📊 {}", split.test_range_desc);
 
-        // Calibración de umbrales institucional (OOF Purged CV predeterminado o Fallback IS)
-        let (model, opt_long, opt_short, best_fit) = ThresholdCalibrationHelper::calibrate_and_train(
+        let cv_config = ThresholdCalibrationHelper::build_purged_cv_config(&active_m_cfg, &bt_cfg);
+
+        let (model, opt_long, opt_short, best_fit) = ThresholdCalibrationHelper::calibrate_and_train_with_cv(
             &split.train_klines,
-            &active_m_cfg,
+            cv_config,
             &bt_cfg,
             "Random Forest",
-            || RandomForestModel::new(active_m_cfg.clone()),
+            || RandomForestModel::new(active_m_cfg.clone()).with_timeframe(model_tf),
         )?;
 
         println!("\n📈 [2/3] Evaluando Backtest In-Sample (IS)...");

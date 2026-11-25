@@ -14,11 +14,9 @@ impl AdaptiveThresholdGrid {
         0.0002, 0.0005, 0.0010, 0.0015, 0.0020, 0.0030, 0.0050,
     ];
 
-    /// Percentiles empíricos objetivos para la exploración de la densidad de señales
-    pub const TARGET_QUANTILES: [f64; 7] = [0.30, 0.45, 0.60, 0.70, 0.80, 0.88, 0.94];
+    pub const TARGET_QUANTILES: [f64; 9] = [0.15, 0.25, 0.35, 0.45, 0.60, 0.70, 0.80, 0.88, 0.94];
 
-    /// Múltiplos de la desviación estándar para captura de eventos direccionales
-    pub const SIGMA_MULTIPLIERS: [f64; 5] = [0.50, 0.75, 1.00, 1.50, 2.00];
+    pub const SIGMA_MULTIPLIERS: [f64; 6] = [0.25, 0.50, 0.75, 1.00, 1.50, 2.00];
 
     /// Construye una rejilla simétrica de candidatos positivos tau > 0 adaptada a la escala de predicciones
     pub fn compute_symmetric_grid(predictions: &[f64]) -> Vec<f64> {
