@@ -33,6 +33,6 @@ pub use purged_pipeline_runner::{PurgedPipelineResult, PurgedPipelineRunner};
 pub use report::BacktestReport;
 pub use robustness::RobustnessCalculator;
 pub use sharpe::SharpeSortinoCalculator;
-pub use stagnation_metric::max_stagnation_ratio;
+pub use stagnation_metric::{compute_stagnation_stats, max_stagnation_ratio, StagnationStats};
 pub use strategy::Strategy;
 pub use walk_forward_result::{WalkForwardMetrics, WalkForwardResult};

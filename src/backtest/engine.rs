@@ -93,6 +93,7 @@ impl BacktestEngine {
             // C-33 & C-08: Invocamos strategy.evaluate(&klines[..=i], i) en cada barra de calentamiento pasando estrictamente
             // el slice causal para que las estrategias con estado interno calienten su memoria sin look-ahead.
             if i < warmup_bars {
+                strategy.sync_open_legs(false, false);
                 if self.config.hedge_mode {
                     let sig = strategy.evaluate_hedge(&klines[..=i], i);
                     if i + 1 == warmup_bars {
@@ -302,8 +303,16 @@ impl BacktestEngine {
 
             // 4. Generar señal al CIERRE de la vela actual usando estrictamente velas hasta el índice i (C-08: t <= T)
             if self.config.hedge_mode {
+                strategy.sync_open_legs(portfolio.has_long(), portfolio.has_short());
                 pending_hedge_signal = Some(strategy.evaluate_hedge(&klines[..=i], i));
             } else {
+                let (long_open, short_open) =
+                    match portfolio.active_position.as_ref().map(|p| p.side) {
+                        Some(crate::types::PositionSide::Long) => (true, false),
+                        Some(crate::types::PositionSide::Short) => (false, true),
+                        None => (false, false),
+                    };
+                strategy.sync_open_legs(long_open, short_open);
                 let sig = strategy.evaluate(&klines[..=i], i);
                 pending_signal = Some(sig);
             }

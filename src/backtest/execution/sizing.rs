@@ -1,5 +1,6 @@
 use crate::risk::{
-    DynamicPositionSizer, FractionalKellySizer, RiskEvaluationContext, VolatilityTargetingSizer,
+    DrawdownGovernor, DynamicPositionSizer, FractionalKellySizer, RiskEvaluationContext,
+    VolatilityTargetingSizer,
 };
 use crate::types::PositionSizing;
 
@@ -148,6 +149,26 @@ impl PositionSizer {
                     0.05
                 };
                 equity * frac * leverage
+            }
+            PositionSizing::DrawdownGovernedInitialCapital {
+                pct,
+                max_dd_pct,
+                gamma,
+                min_scale,
+            } => {
+                let safe_pct = if pct.is_finite() && *pct > 0.0 {
+                    pct.clamp(0.0001, 1.0)
+                } else {
+                    0.0
+                };
+                let base = safe_initial * safe_pct * leverage;
+                let scale = if let Some(ctx) = risk_context {
+                    DrawdownGovernor::new(*max_dd_pct, *gamma, *min_scale)
+                        .calculate_scale(ctx.current_drawdown)
+                } else {
+                    1.0
+                };
+                base * scale
             }
         };
 
@@ -500,5 +521,73 @@ mod tests {
             ),
             0.0
         );
+    }
+
+    #[test]
+    fn test_drawdown_governed_initial_capital_scaling() {
+        let sizing = PositionSizing::DrawdownGovernedInitialCapital {
+            pct: 0.12,
+            max_dd_pct: 0.24,
+            gamma: 1.5,
+            min_scale: 0.30,
+        };
+        let trades: Vec<CompletedTrade> = Vec::new();
+        let ctx_zero_dd = RiskEvaluationContext::new(
+            10_000.0,
+            2.0,
+            100.0,
+            &trades,
+            None,
+            0.0,
+            0.50,
+            None,
+        );
+        let target_zero_dd = PositionSizer::calculate_position_size(
+            &sizing,
+            10_000.0,
+            10_000.0,
+            2.0,
+            100.0,
+            None,
+            None,
+            Some(&ctx_zero_dd),
+        );
+        assert!((target_zero_dd - 2_400.0).abs() < 1e-6);
+
+        let ctx_15_dd = RiskEvaluationContext::new(
+            8_500.0,
+            2.0,
+            100.0,
+            &trades,
+            None,
+            0.15,
+            0.50,
+            None,
+        );
+        let target_15_dd = PositionSizer::calculate_position_size(
+            &sizing,
+            10_000.0,
+            8_500.0,
+            2.0,
+            100.0,
+            None,
+            None,
+            Some(&ctx_15_dd),
+        );
+        let expected_scale = (1.0 - (0.15_f64 / 0.24).powf(1.5)).clamp(0.30, 1.0);
+        let expected_notional = 2_400.0 * expected_scale;
+        assert!((target_15_dd - expected_notional).abs() < 1e-6);
+        assert!(target_15_dd < target_zero_dd);
+
+        let target_no_ctx = PositionSizer::calculate_notional_target(
+            &sizing,
+            10_000.0,
+            8_500.0,
+            2.0,
+            100.0,
+            None,
+            None,
+        );
+        assert!((target_no_ctx - 2_400.0).abs() < 1e-6);
     }
 }

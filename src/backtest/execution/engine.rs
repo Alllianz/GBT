@@ -108,19 +108,20 @@ impl ExecutionEngine {
                 return completed_trade;
             }
 
-            // BUG-33: Bounding estricto sobre Stop Loss y Take Profit dinámicos
-            let dynamic_sl = signal.stop_loss_price.filter(|&sl| {
-                sl.is_finite()
-                    && sl > 0.0
-                    && match side {
-                        PositionSide::Long => {
-                            sl < exec_price && sl <= current_candle.open * (1.0 - 0.0001)
-                        }
-                        PositionSide::Short => {
-                            sl > exec_price && sl >= current_candle.open * (1.0 + 0.0001)
-                        }
-                    }
-            });
+            let entry_exec_type = if let Some(ref ms) = config.microstructure {
+                ms.entry_order_type
+            } else {
+                crate::microstructure::OrderExecutionType::Taker
+            };
+            let entry_commission_rate = config.get_commission_rate(entry_exec_type);
+
+            let dynamic_sl = super::stop_loss_guard::sanitize_dynamic_sl(
+                side,
+                signal.stop_loss_price,
+                exec_price,
+                config,
+                entry_commission_rate,
+            );
 
             let dynamic_tp = signal.take_profit_price.filter(|&tp| {
                 tp.is_finite()
@@ -194,13 +195,6 @@ impl ExecutionEngine {
             if available_collateral <= 0.0 || raw_notional <= 0.0 {
                 return completed_trade;
             }
-
-            let entry_exec_type = if let Some(ref ms) = config.microstructure {
-                ms.entry_order_type
-            } else {
-                crate::microstructure::OrderExecutionType::Taker
-            };
-            let entry_commission_rate = config.get_commission_rate(entry_exec_type);
 
             let cost_per_notional = (1.0 / leverage) + entry_commission_rate;
             let max_supported_notional = if cost_per_notional > 0.0 {

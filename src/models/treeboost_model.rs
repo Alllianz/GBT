@@ -198,21 +198,21 @@ impl TreeBoostModel {
     }
 
     fn build_universal_config(&self, train_rows: usize) -> UniversalConfig {
-        let max_depth = self.config.max_depth.clamp(2, 3);
-        let max_leaves = (1usize << max_depth).clamp(4, 8);
+        let max_depth = self.config.max_depth.clamp(2, 4);
+        let max_leaves = (1usize << max_depth).clamp(4, 16);
         let mut tree_config = TreeConfig::default();
         tree_config.max_depth = max_depth;
         tree_config.max_leaves = max_leaves;
-        tree_config.lambda = (self.config.l2_regularization * 300.0).clamp(20.0, 80.0) as f32;
+        tree_config.lambda = (self.config.l2_regularization * 300.0).clamp(10.0, 80.0);
         tree_config.min_samples_leaf = (train_rows / 25).clamp(40, 160);
         tree_config.post_pruning_gamma = 0.03;
-        tree_config.min_gain = 0.02;
+        tree_config.min_gain = self.config.min_split_gain.max(0.008);
         tree_config.entropy_weight = 0.0;
 
         let mut u_cfg = UniversalConfig::default();
         u_cfg.mode = BoostingMode::PureTree;
-        u_cfg.num_rounds = self.config.num_trees.clamp(25, 45);
-        u_cfg.learning_rate = self.config.learning_rate.clamp(0.015, 0.03);
+        u_cfg.num_rounds = self.config.num_trees.clamp(25, 100);
+        u_cfg.learning_rate = self.config.learning_rate.clamp(0.015, 0.05);
         u_cfg.subsample = 0.50;
         u_cfg.colsample = 0.50;
         u_cfg.validation_ratio = 0.0;
@@ -422,21 +422,22 @@ mod tests {
             learning_rate: 0.1,
             l1_regularization: 0.25,
             l2_regularization: 0.01,
+            min_split_gain: 0.0,
             ..Default::default()
         };
         let model = TreeBoostModel::new(config);
         let u_small = model.build_universal_config(40);
-        assert_eq!(u_small.num_rounds, 45);
-        assert!((u_small.learning_rate - 0.03).abs() < 1e-6);
+        assert_eq!(u_small.num_rounds, 100);
+        assert!((u_small.learning_rate - 0.05).abs() < 1e-6);
         assert!((u_small.subsample - 0.50).abs() < 1e-6);
         assert!((u_small.colsample - 0.50).abs() < 1e-6);
         assert_eq!(u_small.early_stopping_rounds, 6);
-        assert_eq!(u_small.tree_config.max_depth, 3);
-        assert_eq!(u_small.tree_config.max_leaves, 8);
-        assert!((u_small.tree_config.lambda - 20.0).abs() < 1e-6);
+        assert_eq!(u_small.tree_config.max_depth, 4);
+        assert_eq!(u_small.tree_config.max_leaves, 16);
+        assert!((u_small.tree_config.lambda - 10.0).abs() < 1e-6);
         assert_eq!(u_small.tree_config.min_samples_leaf, 40);
         assert!((u_small.tree_config.post_pruning_gamma - 0.03).abs() < 1e-6);
-        assert!((u_small.tree_config.min_gain - 0.02).abs() < 1e-6);
+        assert!((u_small.tree_config.min_gain - 0.008).abs() < 1e-6);
         assert!((u_small.tree_config.entropy_weight - 0.0).abs() < 1e-6);
 
         let low_cfg = ModelConfig {
@@ -444,6 +445,7 @@ mod tests {
             max_depth: 1,
             learning_rate: 0.001,
             l2_regularization: 0.10,
+            min_split_gain: 0.025,
             ..Default::default()
         };
         let low_model = TreeBoostModel::new(low_cfg);
@@ -454,6 +456,7 @@ mod tests {
         assert_eq!(u_large.tree_config.max_leaves, 4);
         assert!((u_large.tree_config.lambda - 30.0).abs() < 1e-6);
         assert_eq!(u_large.tree_config.min_samples_leaf, 64);
+        assert!((u_large.tree_config.min_gain - 0.025).abs() < 1e-6);
 
         let max_reg_cfg = ModelConfig {
             l2_regularization: 0.50,

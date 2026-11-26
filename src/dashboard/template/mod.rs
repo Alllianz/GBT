@@ -1,3 +1,4 @@
+pub mod capital_mode_replay;
 pub mod charts;
 pub mod comparison_table;
 pub mod escape;

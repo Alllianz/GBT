@@ -23,6 +23,12 @@ pub enum PositionSizing {
         fraction: f64,
         window: usize,
     },
+    DrawdownGovernedInitialCapital {
+        pct: f64,
+        max_dd_pct: f64,
+        gamma: f64,
+        min_scale: f64,
+    },
 }
 
 pub type PositionSizingMethod = PositionSizing;

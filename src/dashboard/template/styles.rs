@@ -155,7 +155,7 @@ pub fn get_styles() -> &'static str {
             opacity: 0.45;
             cursor: not-allowed;
         }
-        .chart-wrapper { height: 380px; position: relative; }
+        .chart-wrapper { height: 760px; position: relative; }
         .chart-wrapper-small { height: 180px; position: relative; }
 
         /* Tabla Comparativa Exhaustiva */

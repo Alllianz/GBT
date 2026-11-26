@@ -124,6 +124,12 @@ impl HedgeExecutionEngine {
             return completed_trades;
         }
 
+        let entry_exec_type = config
+            .microstructure
+            .as_ref()
+            .map_or(OrderExecutionType::Taker, |ms| ms.entry_order_type);
+        let entry_commission_rate = config.get_commission_rate(entry_exec_type);
+
         let long_spec = if portfolio.long_position.is_none() {
             Self::build_leg_open_spec(
                 PositionSide::Long,
@@ -133,6 +139,7 @@ impl HedgeExecutionEngine {
                 leverage,
                 exec_price,
                 config,
+                entry_commission_rate,
                 effective_risk_context,
             )
         } else {
@@ -148,6 +155,7 @@ impl HedgeExecutionEngine {
                 leverage,
                 exec_price,
                 config,
+                entry_commission_rate,
                 effective_risk_context,
             )
         } else {
@@ -161,11 +169,6 @@ impl HedgeExecutionEngine {
             return completed_trades;
         }
 
-        let entry_exec_type = config
-            .microstructure
-            .as_ref()
-            .map_or(OrderExecutionType::Taker, |ms| ms.entry_order_type);
-        let entry_commission_rate = config.get_commission_rate(entry_exec_type);
         let cost_per_notional = (1.0 / leverage) + entry_commission_rate;
         let max_supported_total = if cost_per_notional > 0.0 {
             available_collateral / cost_per_notional
@@ -228,6 +231,7 @@ impl HedgeExecutionEngine {
         leverage: f64,
         exec_price: f64,
         config: &BacktestConfig,
+        entry_commission_rate: f64,
         base_risk_context: Option<&RiskEvaluationContext>,
     ) -> Option<LegOpenSpec> {
         let HedgeLegAction::OpenOrKeep {
@@ -245,18 +249,13 @@ impl HedgeExecutionEngine {
             return None;
         }
 
-        let dynamic_sl = stop_loss_price.filter(|&sl| {
-            sl.is_finite()
-                && sl > 0.0
-                && match side {
-                    PositionSide::Long => {
-                        sl < exec_price && sl <= exec_price * (1.0 - 0.0001)
-                    }
-                    PositionSide::Short => {
-                        sl > exec_price && sl >= exec_price * (1.0 + 0.0001)
-                    }
-                }
-        });
+        let dynamic_sl = super::stop_loss_guard::sanitize_dynamic_sl(
+            side,
+            stop_loss_price,
+            exec_price,
+            config,
+            entry_commission_rate,
+        );
 
         let dynamic_tp = take_profit_price.filter(|&tp| {
             tp.is_finite()

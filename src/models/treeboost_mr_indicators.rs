@@ -58,6 +58,36 @@ impl TreeBoostMrIndicators {
             .filter(|v| v.is_finite())
             .map(|v| v.clamp(0.0, 100.0))
     }
+
+    pub fn kaufman_er(history: &[Kline], current_idx: usize, window: usize) -> Option<f64> {
+        if window < 2 || current_idx + 1 < window || current_idx >= history.len() {
+            return None;
+        }
+        let start = current_idx + 1 - window;
+        let slice = &history[start..=current_idx];
+        for k in slice {
+            if !k.close.is_finite() {
+                return None;
+            }
+        }
+        let net_change = (slice[slice.len() - 1].close - slice[0].close).abs();
+        let mut path_sum = 0.0;
+        for pair in slice.windows(2) {
+            path_sum += (pair[1].close - pair[0].close).abs();
+        }
+        if !net_change.is_finite() || !path_sum.is_finite() {
+            return None;
+        }
+        if path_sum == 0.0 {
+            return Some(0.0);
+        }
+        let er = net_change / path_sum;
+        if er.is_finite() {
+            Some(er.clamp(0.0, 1.0))
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -102,5 +132,31 @@ mod tests {
 
         assert!(TreeBoostMrIndicators::bb_zscore(&klines_a, 10, 20).is_none());
         assert!(TreeBoostMrIndicators::rsi_14(&klines_a, 10).is_none());
+    }
+
+    #[test]
+    fn test_kaufman_er_causality_and_bounds() {
+        let trend_closes: Vec<f64> = (0..25).map(|i| 100.0 + i as f64).collect();
+        let mut trend_future = trend_closes.clone();
+        trend_future.extend_from_slice(&[10.0, 500.0, 1.0]);
+        let ka = make_klines(&trend_closes);
+        let kb = make_klines(&trend_future);
+
+        let er_a = TreeBoostMrIndicators::kaufman_er(&ka, 24, 20).unwrap();
+        let er_b = TreeBoostMrIndicators::kaufman_er(&kb, 24, 20).unwrap();
+        assert!((er_a - 1.0).abs() < 1e-12);
+        assert!((er_a - er_b).abs() < 1e-12);
+
+        let flat_klines = make_klines(&[100.0; 25]);
+        assert_eq!(TreeBoostMrIndicators::kaufman_er(&flat_klines, 24, 20), Some(0.0));
+
+        let choppy_closes: Vec<f64> = (0..25).map(|i| if i % 2 == 0 { 100.0 } else { 105.0 }).collect();
+        let choppy_klines = make_klines(&choppy_closes);
+        let er_chop = TreeBoostMrIndicators::kaufman_er(&choppy_klines, 24, 20).unwrap();
+        assert!(er_chop < 0.1);
+
+        assert!(TreeBoostMrIndicators::kaufman_er(&ka, 10, 20).is_none());
+        assert!(TreeBoostMrIndicators::kaufman_er(&ka, 24, 1).is_none());
+        assert!(TreeBoostMrIndicators::kaufman_er(&ka, 25, 20).is_none());
     }
 }

@@ -10,7 +10,7 @@ impl EvolveReport {
             Some(oos) => {
                 let oos_m = &oos.metrics;
                 format!(
-                    "OOS(PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% T:{} Liq:{} Trend:{:+.0}({}) MR:{:+.0}({}) Dual:{:.2}) | Rob:{:.2}x",
+                    "OOS(PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% Uwf:{:.1}% T:{} Liq:{} Trend:{:+.0}({}) MR:{:+.0}({}) Dual:{:.2}) | Rob:{:.2}x",
                     oos_m.net_profit_pct,
                     oos_m.profit_factor,
                     oos_m.composite_score,
@@ -18,6 +18,7 @@ impl EvolveReport {
                     oos_m.max_drawdown_pct,
                     oos_m.capital_to_maxdd_ratio,
                     c.oos_stag * 100.0,
+                    c.oos_underwater_freq * 100.0,
                     oos_m.total_trades,
                     c.oos_liq,
                     c.oos_trend_net_pnl,
@@ -34,7 +35,7 @@ impl EvolveReport {
             ),
         };
         format!(
-            "#{} {} [gate={}|score={:.4}] | IS(PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% T:{} Liq:{} Trend:{:+.0}({}) MR:{:+.0}({}) Dual:{:.2}) | OOF:{:.4} | {}",
+            "#{} {} [gate={}|score={:.4}] | IS(PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% Uwf:{:.1}% T:{} Liq:{} Trend:{:+.0}({}) MR:{:+.0}({}) Dual:{:.2}) | OOF:{:.4} | {}",
             c.id,
             c.label,
             c.passes_gate,
@@ -46,6 +47,7 @@ impl EvolveReport {
             is_m.max_drawdown_pct,
             is_m.capital_to_maxdd_ratio,
             c.is_stag * 100.0,
+            c.is_underwater_freq * 100.0,
             is_m.total_trades,
             c.is_liq,
             c.is_trend_net_pnl,
@@ -111,7 +113,7 @@ impl EvolveReport {
             println!("\n[WINNER IS vs OOS EVALUATION]");
             let is_m = &winner.is_res.metrics;
             println!(
-                "  IS (PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% T:{} Liq:{} Trend:{:+.2}({}) MR:{:+.2}({}) Dual:{:.2})",
+                "  IS (PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% Uwf:{:.1}% T:{} Liq:{} Trend:{:+.2}({}) MR:{:+.2}({}) Dual:{:.2})",
                 is_m.net_profit_pct,
                 is_m.profit_factor,
                 is_m.composite_score,
@@ -119,6 +121,7 @@ impl EvolveReport {
                 is_m.max_drawdown_pct,
                 is_m.capital_to_maxdd_ratio,
                 winner.is_stag * 100.0,
+                winner.is_underwater_freq * 100.0,
                 is_m.total_trades,
                 winner.is_liq,
                 winner.is_trend_net_pnl,
@@ -130,7 +133,7 @@ impl EvolveReport {
             if let Some(ref oos) = winner.oos_res {
                 let oos_m = &oos.metrics;
                 println!(
-                    "  OOS(PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% T:{} Liq:{} Trend:{:+.2}({}) MR:{:+.2}({}) Dual:{:.2}) | Robustness:{:.2}x",
+                    "  OOS(PnL:{:+.1}% PF:{:.2} Comp:{:.4} R2:{:.3} DD:{:.1}% CapDD:{:.1} Stag:{:.1}% Uwf:{:.1}% T:{} Liq:{} Trend:{:+.2}({}) MR:{:+.2}({}) Dual:{:.2}) | Robustness:{:.2}x",
                     oos_m.net_profit_pct,
                     oos_m.profit_factor,
                     oos_m.composite_score,
@@ -138,6 +141,7 @@ impl EvolveReport {
                     oos_m.max_drawdown_pct,
                     oos_m.capital_to_maxdd_ratio,
                     winner.oos_stag * 100.0,
+                    winner.oos_underwater_freq * 100.0,
                     oos_m.total_trades,
                     winner.oos_liq,
                     winner.oos_trend_net_pnl,

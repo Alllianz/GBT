@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use crate::backtest::{BacktestConfig, BacktestEngine};
+use crate::backtest::{compute_stagnation_stats, BacktestConfig, BacktestEngine, BacktestResult};
 use crate::features::H4FeatureMatrix;
 use crate::models::{TreeBoostHedgeConfig, TreeBoostSignalDecision};
 use crate::types::{FitnessMetric, Kline, Timeframe};
@@ -41,9 +41,9 @@ impl OofCalibrator {
                 (min_trades, fallback)
             }
             Some(_) => {
-                let min_trades = (num_klines / 40).clamp(60, 240);
-                let fallback = (min_trades / 2).max(30);
-                (min_trades, fallback)
+                let min_trades = (num_klines / 160).clamp(60, 95);
+                let fallback_min_trades = (min_trades / 2).max(25);
+                (min_trades, fallback_min_trades)
             }
             None => Self::min_trade_thresholds(num_klines),
         }
@@ -73,7 +73,7 @@ impl OofCalibrator {
         let (min_trades, fallback_min_trades) =
             Self::min_trade_thresholds_for_timeframe(num_klines, timeframe);
 
-        for trade_floor in [min_trades, fallback_min_trades] {
+        for trade_floor in [min_trades, fallback_min_trades, 1] {
             if let Some(hit) = Self::best_in_tier(candidates, trade_floor) {
                 return hit;
             }
@@ -102,6 +102,19 @@ impl OofCalibrator {
         Self::select_best_candidate_for_timeframe(candidates, num_klines, None, default_val)
     }
 
+    fn score_backtest_result(res: &BacktestResult, fitness_metric: FitnessMetric) -> f64 {
+        let base_fit = fitness_metric.evaluate(&res.metrics);
+        if fitness_metric == FitnessMetric::CompositeAllianz && res.metrics.net_profit > 0.0 {
+            let stag = compute_stagnation_stats(&res.equity_curve);
+            base_fit
+                - 0.35 * stag.max_stagnation_ratio
+                - 0.25 * stag.total_underwater_ratio
+                - 0.25 * (res.metrics.max_drawdown_pct / 100.0).clamp(0.0, 1.0)
+        } else {
+            base_fit
+        }
+    }
+
     pub fn calibrate_symmetric(
         oof_predictions: &[f64],
         klines: &[Kline],
@@ -116,9 +129,16 @@ impl OofCalibrator {
             return (0.002, -0.002, 0.0);
         }
 
-        let grid = AdaptiveThresholdGrid::compute_symmetric_grid(oof_predictions);
+        let active_oof = if warmup_bars < oof_predictions.len() {
+            &oof_predictions[warmup_bars..]
+        } else {
+            oof_predictions
+        };
+        let grid = AdaptiveThresholdGrid::compute_symmetric_grid(active_oof);
         let hedge_cfg =
             TreeBoostHedgeConfig::for_timeframe(base_config.timeframe, base_config.hedge_mode);
+        let mut eval_cfg = base_config.clone();
+        eval_cfg.hedge_mode = base_config.hedge_mode || hedge_cfg.vol_target_pct.is_some();
 
         let candidates: Vec<(f64, f64, usize)> = grid
             .into_par_iter()
@@ -131,10 +151,10 @@ impl OofCalibrator {
                     hedge_config: hedge_cfg,
                     decision: TreeBoostSignalDecision::new(),
                 };
-                let engine = BacktestEngine::new(base_config.clone());
+                let engine = BacktestEngine::new(eval_cfg.clone());
                 match engine.run_with_warmup(&mut strat, klines, warmup_bars) {
                     Ok(res) => {
-                        let score = fitness_metric.evaluate(&res.metrics);
+                        let score = Self::score_backtest_result(&res, fitness_metric);
                         (th, score, res.metrics.total_trades)
                     }
                     Err(_) => (th, f64::NEG_INFINITY, 0),
@@ -142,9 +162,10 @@ impl OofCalibrator {
             })
             .collect();
 
+        let active_bars = klines.len().saturating_sub(warmup_bars);
         let (final_th, final_score) = Self::select_best_candidate_for_timeframe(
             &candidates,
-            klines.len(),
+            active_bars,
             base_config.timeframe,
             0.002,
         );
@@ -182,10 +203,17 @@ impl OofCalibrator {
             return (0.002, -0.002, 0.0);
         }
 
+        let active_oof = if warmup_bars < oof_predictions.len() {
+            &oof_predictions[warmup_bars..]
+        } else {
+            oof_predictions
+        };
         let (long_grid, short_grid) =
-            AdaptiveThresholdGrid::compute_asymmetric_grids(oof_predictions);
+            AdaptiveThresholdGrid::compute_asymmetric_grids(active_oof);
         let hedge_cfg =
             TreeBoostHedgeConfig::for_timeframe(base_config.timeframe, base_config.hedge_mode);
+        let mut eval_cfg = base_config.clone();
+        eval_cfg.hedge_mode = base_config.hedge_mode || hedge_cfg.vol_target_pct.is_some();
 
         let mut all_pairs = Vec::with_capacity(long_grid.len() * short_grid.len());
         let mut pairs = Vec::with_capacity(long_grid.len() * short_grid.len());
@@ -211,10 +239,10 @@ impl OofCalibrator {
                     hedge_config: hedge_cfg,
                     decision: TreeBoostSignalDecision::new(),
                 };
-                let engine = BacktestEngine::new(base_config.clone());
+                let engine = BacktestEngine::new(eval_cfg.clone());
                 match engine.run_with_warmup(&mut strat, klines, warmup_bars) {
                     Ok(res) => {
-                        let score = fitness_metric.evaluate(&res.metrics);
+                        let score = Self::score_backtest_result(&res, fitness_metric);
                         ((l_th, s_th), score, res.metrics.total_trades)
                     }
                     Err(_) => ((l_th, s_th), f64::NEG_INFINITY, 0),
@@ -222,9 +250,10 @@ impl OofCalibrator {
             })
             .collect();
 
+        let active_bars = klines.len().saturating_sub(warmup_bars);
         let (final_pair, final_score) = Self::select_best_candidate_for_timeframe(
             &candidates,
-            klines.len(),
+            active_bars,
             base_config.timeframe,
             (0.002, -0.002),
         );
@@ -500,5 +529,132 @@ mod tests {
             OofCalibrator::calibrate_symmetric(&preds, &klines, FitnessMetric::SharpeRatio, &cfg);
         assert!(sym_long > 0.0);
         assert!(sym_short < 0.0);
+    }
+
+    #[test]
+    fn test_oof_tier1_fallback_and_zero_trade_floor() {
+        let low_trade_candidates = vec![(0.001, 1.2, 3), (0.002, 2.8, 1), (0.003, 9.9, 0)];
+        let (th, score) = OofCalibrator::select_best_candidate_for_timeframe(
+            &low_trade_candidates,
+            2000,
+            Some(Timeframe::H4),
+            0.002,
+        );
+        assert_eq!(th, 0.002);
+        assert!((score - 2.8).abs() < 1e-9);
+
+        let zero_trade_candidates = vec![(0.001, 5.0, 0), (0.002, 8.0, 0)];
+        let (zero_th, zero_score) = OofCalibrator::select_best_candidate_for_timeframe(
+            &zero_trade_candidates,
+            2000,
+            Some(Timeframe::H4),
+            0.002,
+        );
+        assert_eq!(zero_th, 0.002);
+        assert_eq!(zero_score, 0.0);
+
+        assert_eq!(
+            OofCalibrator::min_trade_thresholds_for_timeframe(1200, Some(Timeframe::H4)),
+            (60, 30)
+        );
+        assert_eq!(
+            OofCalibrator::min_trade_thresholds_for_timeframe(6000, Some(Timeframe::H1)),
+            (60, 30)
+        );
+        assert_eq!(
+            OofCalibrator::min_trade_thresholds_for_timeframe(12000, Some(Timeframe::H1)),
+            (75, 37)
+        );
+        assert_eq!(
+            OofCalibrator::min_trade_thresholds_for_timeframe(16000, Some(Timeframe::H1)),
+            (95, 47)
+        );
+    }
+
+    #[test]
+    fn test_oof_test_strategy_clamps_sl_syncs_legs_and_scales_vol() {
+        let klines: Vec<Kline> = (0..110)
+            .map(|i| Kline {
+                timestamp: (i as i64 + 1) * 3600,
+                open: 100.0,
+                high: 105.0,
+                low: 95.0,
+                close: 100.0,
+                volume: 100.0,
+            })
+            .collect();
+        let mut preds = vec![0.0; 110];
+        preds[100] = 0.005;
+        preds[101] = 0.0012;
+
+        let mut cfg = TreeBoostHedgeConfig::for_timeframe(Some(Timeframe::H4), false);
+        cfg.primary_sl_atr_mult = 2.2;
+        cfg.max_sl_pct = Some(0.028);
+        cfg.vol_target_pct = Some(0.015);
+
+        let mut strat = OofTestStrategy {
+            predictions: &preds,
+            long_th: 0.004,
+            short_th: -0.004,
+            warmup_bars: 100,
+            hedge_config: cfg,
+            decision: TreeBoostSignalDecision::new(),
+        };
+
+        let h100 = strat.evaluate_hedge(&klines, 100);
+        match h100.long {
+            crate::types::HedgeLegAction::OpenOrKeep {
+                stop_loss_price: Some(sl),
+                size_multiplier,
+                ..
+            } => {
+                assert!((sl - 97.2).abs() < 1e-6);
+                assert!((size_multiplier - 0.35).abs() < 1e-6);
+            }
+            other => panic!("unexpected leg: {:?}", other),
+        }
+
+        strat.sync_open_legs(false, false);
+        assert_eq!(strat.decision.current_direction(), SignalDirection::Flat);
+        let s101 = strat.evaluate(&klines, 101);
+        assert_eq!(s101.direction, SignalDirection::Flat);
+    }
+
+    #[test]
+    fn test_oof_composite_allianz_stagnation_penalty() {
+        use crate::backtest::{EquityPoint, MetricsCalculator};
+
+        let curve = vec![
+            EquityPoint::new(1000, 0, 10000.0, 10000.0, 0.0, 0.0),
+            EquityPoint::new(2000, 1, 11000.0, 11000.0, 0.0, 0.0),
+            EquityPoint::new(3000, 2, 10500.0, 10500.0, 500.0, 4.545454545454546),
+            EquityPoint::new(4000, 3, 10600.0, 10600.0, 400.0, 3.6363636363636362),
+        ];
+        let mut metrics = MetricsCalculator::calculate(10000.0, &[], &curve);
+        metrics.net_profit = 600.0;
+        metrics.net_profit_pct = 6.0;
+        metrics.max_drawdown_pct = 10.0;
+        metrics.composite_score = 0.8;
+
+        let res = BacktestResult {
+            metrics: metrics.clone(),
+            trades: Vec::new(),
+            equity_curve: curve.clone(),
+        };
+        let adj = OofCalibrator::score_backtest_result(&res, FitnessMetric::CompositeAllianz);
+        let expected = 0.8 - 0.35 * 0.5 - 0.25 * 0.5 - 0.25 * 0.10;
+        assert!((adj - expected).abs() < 1e-12);
+
+        let mut loss_metrics = metrics;
+        loss_metrics.net_profit = -100.0;
+        loss_metrics.composite_score = -0.2;
+        let loss_res = BacktestResult {
+            metrics: loss_metrics,
+            trades: Vec::new(),
+            equity_curve: curve,
+        };
+        let loss_adj =
+            OofCalibrator::score_backtest_result(&loss_res, FitnessMetric::CompositeAllianz);
+        assert!((loss_adj - (-0.2)).abs() < 1e-12);
     }
 }

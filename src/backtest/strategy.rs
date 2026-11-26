@@ -13,6 +13,8 @@ pub trait Strategy: Send + Sync {
         HedgeSignal::from_net_signal(self.evaluate(history, current_idx))
     }
 
+    fn sync_open_legs(&mut self, _long_open: bool, _short_open: bool) {}
+
     /// Limpia cualquier caché interno de predicciones o estado entre ejecuciones de backtest (ej. IS vs OOS)
     fn clear_cache(&mut self) {}
 }

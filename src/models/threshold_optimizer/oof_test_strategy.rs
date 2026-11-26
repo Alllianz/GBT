@@ -1,6 +1,9 @@
 use crate::backtest::Strategy;
+use crate::models::treeboost_signal_decision::{
+    build_vol_scaled_primary_hedge_signal, clamp_signal_max_sl,
+};
 use crate::models::{TreeBoostHedgeConfig, TreeBoostSignalDecision};
-use crate::types::{Kline, Signal};
+use crate::types::{HedgeSignal, Kline, Signal, SignalDirection};
 
 pub struct OofTestStrategy<'a> {
     pub predictions: &'a [f64],
@@ -20,6 +23,14 @@ impl<'a> Strategy for OofTestStrategy<'a> {
         self.decision.reset();
     }
 
+    fn sync_open_legs(&mut self, long_open: bool, short_open: bool) {
+        match self.decision.current_direction() {
+            SignalDirection::Long if !long_open => self.decision.reset(),
+            SignalDirection::Short if !short_open => self.decision.reset(),
+            _ => {}
+        }
+    }
+
     fn evaluate(&mut self, history: &[Kline], current_idx: usize) -> Signal {
         if current_idx >= history.len() {
             self.decision.reset();
@@ -32,14 +43,35 @@ impl<'a> Strategy for OofTestStrategy<'a> {
         }
 
         let pred = self.predictions[current_idx];
-        self.decision.step(
+        let sig = self.decision.step_with_profit_lock(
             history,
             current_idx,
             pred,
             self.long_th,
             self.short_th,
             self.hedge_config.primary_sl_atr_mult,
+            self.hedge_config.primary_tp_atr_mult,
+            self.hedge_config.trailing_atr_mult,
             self.hedge_config.min_hold_bars,
+            self.hedge_config.hysteresis_frac,
+            self.hedge_config.trail_activate_atr_mult,
+        );
+        clamp_signal_max_sl(
+            sig,
+            history[current_idx].close,
+            self.hedge_config.max_sl_pct,
+        )
+    }
+
+    fn evaluate_hedge(&mut self, history: &[Kline], current_idx: usize) -> HedgeSignal {
+        let primary = self.evaluate(history, current_idx);
+        build_vol_scaled_primary_hedge_signal(
+            primary,
+            history,
+            current_idx,
+            self.hedge_config.vol_target_pct,
+            self.hedge_config.vol_min_mult,
+            self.hedge_config.vol_max_mult,
         )
     }
 }
